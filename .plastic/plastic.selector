@@ -1,0 +1,4 @@
+repository "CyberGame/CyberGame@18968192858438@cloud"
+  path "/"
+    br "/main"
+    co "/main"
