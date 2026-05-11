@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 9005220659476430821}
   - component: {fileID: 9005220659476430820}
   - component: {fileID: 9018249871969862650}
-  - component: {fileID: -6899739982090178279}
+  - component: {fileID: 7943494676543527408}
   m_Layer: 0
   m_Name: MainCamera
   m_TagString: MainCamera
@@ -126,7 +126,7 @@ MonoBehaviour:
       m_PostInfinity: 2
       m_RotationOrder: 4
   CustomBlends: {fileID: 0}
---- !u!114 &-6899739982090178279
+--- !u!114 &7943494676543527408
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
