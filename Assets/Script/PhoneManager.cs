@@ -8,6 +8,9 @@ public class PhoneManager : MonoBehaviour
     public GameObject phoneCanvas;
     private bool _isPhoneOpen = false;
 
+    // Add this reference
+    public MonoBehaviour firstPersonController;
+
     void Update()
     {
 #if ENABLE_INPUT_SYSTEM
@@ -27,15 +30,19 @@ public class PhoneManager : MonoBehaviour
 
         if (_isPhoneOpen)
         {
-            Time.timeScale = 0f; // pause game
-            Cursor.lockState = CursorLockMode.None; // unlock cursor
+            Time.timeScale = 0f;
+            Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
+            // Disable camera/player control
+            firstPersonController.enabled = false;
         }
         else
         {
-            Time.timeScale = 1f; // resume game
-            Cursor.lockState = CursorLockMode.Locked; // lock cursor back
+            Time.timeScale = 1f;
+            Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
+            // Re-enable camera/player control
+            firstPersonController.enabled = true;
         }
     }
 }
