@@ -1,6 +1,5 @@
 using UnityEngine;
 using TMPro;
-using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 
 public class WiFiManager : MonoBehaviour
@@ -31,7 +30,7 @@ public class WiFiManager : MonoBehaviour
     public GameObject wifiStatusIcon;
 
     [Header("Scene Settings")]
-    public string interiorSceneName = "Interior"; // name of your interior scene
+    public string interiorSceneName = "Interior";
 
     public bool isCompromised = false;
     private string _connectedNetwork = "";
@@ -39,9 +38,12 @@ public class WiFiManager : MonoBehaviour
     private string _savedNetwork = "";
     private string _cafePassword = "cafe1234";
 
+    // Track last known cafe zone state to avoid updating every frame unnecessarily
+    private bool _lastCafeState = false;
+    private bool _isInteriorScene = false;
+
     void Start()
     {
-        // set password dot character
         if (passwordInput != null)
         {
             passwordInput.inputType = TMP_InputField.InputType.Password;
@@ -49,18 +51,52 @@ public class WiFiManager : MonoBehaviour
             passwordInput.ForceLabelUpdate();
         }
 
-        // auto connect home if we are in interior scene
-        string currentScene = SceneManager.GetActiveScene().name;
-        if (currentScene == interiorSceneName)
+        _isInteriorScene = SceneManager.GetActiveScene().name == interiorSceneName;
+
+        if (_isInteriorScene)
         {
+            if (homeWifiItem != null) homeWifiItem.SetActive(true);
+            if (cafeReal != null) cafeReal.SetActive(false);
+            if (cafeEvil1 != null) cafeEvil1.SetActive(false);
+            if (cafeEvil2 != null) cafeEvil2.SetActive(false);
             AutoConnectHome();
         }
         else
         {
-            // hide home wifi when not in interior
-            if (homeWifiItem != null)
-                homeWifiItem.SetActive(false);
+            if (homeWifiItem != null) homeWifiItem.SetActive(false);
+            UpdateCafeNetworks();
         }
+    }
+
+    void Update()
+    {
+        // Only run in main scene, and only when something changed
+        if (_isInteriorScene) return;
+
+        bool inCafe = CafeZone.PlayerInCafe;
+        if (inCafe != _lastCafeState)
+        {
+            _lastCafeState = inCafe;
+            UpdateCafeNetworks();
+
+            // If player left cafe while connected to cafe network, disconnect
+            if (!inCafe && (_connectedNetwork == "CafeReal" ||
+                _connectedNetwork == "Evil1" ||
+                _connectedNetwork == "Evil2"))
+            {
+                DisconnectAll();
+                _savedNetwork = "";
+                Debug.Log("Left cafe - disconnected from cafe network");
+            }
+        }
+    }
+
+    void UpdateCafeNetworks()
+    {
+        bool inCafe = CafeZone.PlayerInCafe;
+        if (cafeReal != null) cafeReal.SetActive(inCafe);
+        if (cafeEvil1 != null) cafeEvil1.SetActive(inCafe);
+        if (cafeEvil2 != null) cafeEvil2.SetActive(inCafe);
     }
 
     public void OpenWiFi()
@@ -84,38 +120,25 @@ public class WiFiManager : MonoBehaviour
             _savedNetwork = _connectedNetwork;
             DisconnectAll();
 
-            // keep homewifi visible if in interior scene
-            string currentScene = SceneManager.GetActiveScene().name;
-            if (currentScene == interiorSceneName)
-            {
-                if (homeWifiItem != null)
-                    homeWifiItem.SetActive(true);
-            }
+            if (_isInteriorScene)
+                if (homeWifiItem != null) homeWifiItem.SetActive(true);
         }
         else
         {
-            // auto reconnect to saved network
             if (_savedNetwork == "CafeReal")
             {
-                DisconnectAll();
                 _connectedNetwork = "CafeReal";
                 isCompromised = false;
                 if (checkCafeReal != null) checkCafeReal.SetActive(true);
                 if (wifiStatusIcon != null) wifiStatusIcon.SetActive(true);
                 Debug.Log("Auto-reconnected to CafeWifi67 (real)");
             }
-            else if (_savedNetwork == "Evil1")
-            {
-                ConnectEvilTwin1();
-            }
-            else if (_savedNetwork == "Evil2")
-            {
-                ConnectEvilTwin2();
-            }
-            else if (_savedNetwork == "HomeWifi")
-            {
-                AutoConnectHome();
-            }
+            else if (_savedNetwork == "Evil1") ConnectEvilTwin1();
+            else if (_savedNetwork == "Evil2") ConnectEvilTwin2();
+            else if (_savedNetwork == "HomeWifi") AutoConnectHome();
+
+            // Restore correct network visibility
+            if (!_isInteriorScene) UpdateCafeNetworks();
         }
     }
 
