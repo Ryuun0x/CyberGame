@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "unity-mcp-gateway": {
+      "command": "C:\\Users\\pajar\\OneDrive\\Documents\\GitHub\\CyberGame\\Library\\PackageCache\\com.unity.ai.assistant@6ed6beda7ca9\\RelayApp~\\relay_win.exe",
+      "args": [
+        "--mcp",
+        "--log-dir",
+        "C:\\Users\\pajar\\OneDrive\\Documents\\GitHub\\CyberGame\\Logs"
+      ],
+      "env": {
+        "UNITY_ACP_SESSION_TOKEN": "5ba80e16105f812a6ecad70fb85a07aec7c039e70c77d29d1fb7b52a2240a7e8",
+        "UNITY_INSTANCE_ID": "46784"
+      }
+    }
+  }
+}

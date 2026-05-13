@@ -1,4 +1,4 @@
-using StarterAssets;
+﻿using StarterAssets;
 using System.Collections;
 using TMPro;
 using UnityEngine;
@@ -32,6 +32,13 @@ public class WakeUpSequence : MonoBehaviour
     public float blinkSpeed = 0.3f;
     public float pauseBeforeSequence = 2f;
 
+    [Header("Spawn Points")]
+    public Transform spawnBed;
+    public Transform spawnDoor;
+
+    [Header("Testing")]
+    public bool resetOnPlay = true; // ← uncheck this for final build
+
     private string[] _dialogueLines = new string[]
     {
         "Another morning...",
@@ -41,6 +48,10 @@ public class WakeUpSequence : MonoBehaviour
 
     void Start()
     {
+        // Reset for testing — uncheck resetOnPlay when done testing
+        if (resetOnPlay)
+            PlayerPrefs.DeleteKey("WakeUpPlayed");
+
         cinematicCamera.enabled = true;
         playerCamera.enabled = false;
         player.SetActive(false);
@@ -48,33 +59,59 @@ public class WakeUpSequence : MonoBehaviour
         if (narrationBox != null)
             narrationBox.SetActive(false);
 
-        StartCoroutine(PlayWakeUpSequence());
+        if (PlayerPrefs.GetInt("WakeUpPlayed", 0) == 0)
+        {
+            // First time — spawn at bed, play cinematic
+            if (spawnBed != null)
+                player.transform.position = spawnBed.position;
+
+            PlayerPrefs.SetInt("WakeUpPlayed", 1);
+            StartCoroutine(PlayWakeUpSequence());
+        }
+        else
+        {
+            // Returning — spawn at door, skip cinematic
+            if (spawnDoor != null)
+                player.transform.position = spawnDoor.position;
+
+            SkipToFPS();
+        }
+    }
+
+    void SkipToFPS()
+    {
+        cinematicCamera.enabled = false;
+        player.SetActive(true);
+        playerCamera.enabled = true;
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+
+        // Reset camera rotation so player can look around freely
+        if (spawnDoor != null)
+            player.transform.rotation = spawnDoor.rotation;
+
+        // Reset camera local rotation
+        playerCamera.transform.localRotation = Quaternion.identity;
+
+        FirstPersonController fpc = player.GetComponentInChildren<FirstPersonController>();
+        if (fpc != null) fpc.enabled = true;
+
+        if (screenFader != null)
+            StartCoroutine(screenFader.FadeIn());
     }
 
     IEnumerator PlayWakeUpSequence()
     {
-        // Blinking effect � fade in and out a few times
         yield return StartCoroutine(Blink());
-
-        // Pause before sequence starts
         yield return new WaitForSeconds(pauseBeforeSequence);
-
-        // Look around slowly
         yield return StartCoroutine(LookAround());
-
-        // Sit up
         yield return StartCoroutine(SitUp());
-
-        // Small pause before dialogue
         yield return new WaitForSeconds(0.5f);
-
-        // Show dialogue auto advancing
         yield return StartCoroutine(PlayDialogue());
 
-        // Fade to black
+        // Fade to black then switch to FPS
         yield return StartCoroutine(screenFader.FadeOut());
 
-        // Switch to FPS
         cinematicCamera.enabled = false;
         player.SetActive(true);
 
@@ -87,25 +124,18 @@ public class WakeUpSequence : MonoBehaviour
         FirstPersonController fpc = player.GetComponentInChildren<FirstPersonController>();
         if (fpc != null) fpc.enabled = true;
 
-        // Fade back in
         yield return StartCoroutine(screenFader.FadeIn());
     }
 
     IEnumerator Blink()
     {
-        // Start fully black
         yield return StartCoroutine(screenFader.FadeIn());
 
         for (int i = 0; i < blinkCount; i++)
         {
-            // Fade out (close eyes)
             yield return StartCoroutine(screenFader.FadeOut());
             yield return new WaitForSeconds(blinkSpeed);
-
-            // Fade in (open eyes)
             yield return StartCoroutine(screenFader.FadeIn());
-
-            // Eyes open a little longer each time
             yield return new WaitForSeconds(blinkSpeed + (i * 0.2f));
         }
     }
@@ -152,7 +182,6 @@ public class WakeUpSequence : MonoBehaviour
             if (narrationText != null)
                 narrationText.text = line;
 
-            // Auto advance after delay � no input needed
             yield return new WaitForSeconds(secondsBetweenLines);
         }
 
