@@ -2,11 +2,14 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.SceneManagement;
 
+/// <summary>
+/// Handles WiFi screen internal logic only.
+/// Navigation (open/close) is handled by PhoneHomeScreen.
+/// Attach this to WifiScreen.
+/// </summary>
 public class WiFiManager : MonoBehaviour
 {
-    [Header("Screens")]
-    public GameObject wifiScreen;
-    public GameObject homeScreen;
+    [Header("Network List")]
     public GameObject networkList;
 
     [Header("Network Items")]
@@ -97,18 +100,6 @@ public class WiFiManager : MonoBehaviour
         if (cafeReal != null) cafeReal.SetActive(inCafe);
         if (cafeEvil1 != null) cafeEvil1.SetActive(inCafe);
         if (cafeEvil2 != null) cafeEvil2.SetActive(inCafe);
-    }
-
-    public void OpenWiFi()
-    {
-        wifiScreen.SetActive(true);
-        homeScreen.SetActive(false);
-    }
-
-    public void CloseWiFi()
-    {
-        wifiScreen.SetActive(false);
-        homeScreen.SetActive(true);
     }
 
     public void ToggleWiFi(bool isOn)

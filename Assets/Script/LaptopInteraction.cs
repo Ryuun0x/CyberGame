@@ -14,6 +14,11 @@ public class LaptopInteraction : MonoBehaviour, IInteractable
     [Header("UI")]
     public GameObject laptopCanvas;
 
+    [Header("UI to Hide")]
+    public GameObject crosshairDot;
+    public GameObject interactPrompt;
+
+
     [Header("Player")]
     public MonoBehaviour firstPersonController;
     public GameObject playerFollowCamera; // drag PlayerFollowCamera here
@@ -65,6 +70,10 @@ public class LaptopInteraction : MonoBehaviour, IInteractable
 
         if (firstPersonController != null)
             firstPersonController.enabled = false;
+        
+        // Hide crosshair and prompt
+        if (crosshairDot != null) crosshairDot.SetActive(false);
+        if (interactPrompt != null) interactPrompt.SetActive(false);
 
         // Disable follow camera so Cinemachine stops controlling MainCamera
         if (playerFollowCamera != null)
@@ -122,6 +131,10 @@ public class LaptopInteraction : MonoBehaviour, IInteractable
 
         if (firstPersonController != null)
             firstPersonController.enabled = true;
+        
+        // Show crosshair and prompt again
+        if (crosshairDot != null) crosshairDot.SetActive(true);
+        if (interactPrompt != null) interactPrompt.SetActive(true);
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
