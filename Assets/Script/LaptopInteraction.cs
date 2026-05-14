@@ -16,9 +16,10 @@ public class LaptopInteraction : MonoBehaviour, IInteractable
 
     [Header("Player")]
     public MonoBehaviour firstPersonController;
-    public GameObject playerCameraRoot;
+    public GameObject playerFollowCamera; // drag PlayerFollowCamera here
 
     private bool _isUsingLaptop = false;
+    private bool _isAnimating = false;
     private Vector3 _originalCamPos;
     private Quaternion _originalCamRot;
     private Camera _camera;
@@ -32,41 +33,49 @@ public class LaptopInteraction : MonoBehaviour, IInteractable
 
     void Update()
     {
-        if (_isUsingLaptop)
+        if (_camera == null)
         {
-#if ENABLE_INPUT_SYSTEM
+            _camera = Camera.main;
+            return;
+        }
+
+        if (_isUsingLaptop && !_isAnimating)
+        {
+            #if ENABLE_INPUT_SYSTEM
             if (Keyboard.current.escapeKey.wasPressedThisFrame)
-#else
+            #else
             if (Input.GetKeyDown(KeyCode.Escape))
-#endif
+            #endif
             {
-                CloseLaptop();
+                StartCoroutine(CloseLaptop());
             }
         }
     }
 
     public void Interact()
     {
-        if (!_isUsingLaptop)
+        if (!_isUsingLaptop && !_isAnimating)
             StartCoroutine(OpenLaptop());
     }
 
     IEnumerator OpenLaptop()
     {
         _isUsingLaptop = true;
+        _isAnimating = true;
 
-        // Disable player control
         if (firstPersonController != null)
             firstPersonController.enabled = false;
+
+        // Disable follow camera so Cinemachine stops controlling MainCamera
+        if (playerFollowCamera != null)
+            playerFollowCamera.SetActive(false);
 
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
-        // Save current camera position
         _originalCamPos = _camera.transform.position;
         _originalCamRot = _camera.transform.rotation;
 
-        // Smoothly move camera to laptop view point
         float elapsed = 0f;
         while (elapsed < 1f)
         {
@@ -79,23 +88,19 @@ public class LaptopInteraction : MonoBehaviour, IInteractable
             yield return null;
         }
 
-        // Show laptop UI
         if (laptopCanvas != null)
             laptopCanvas.SetActive(true);
+
+        _isAnimating = false;
     }
 
-    void CloseLaptop()
+    IEnumerator CloseLaptop()
     {
-        StartCoroutine(ExitLaptop());
-    }
+        _isAnimating = true;
 
-    IEnumerator ExitLaptop()
-    {
-        // Hide UI
         if (laptopCanvas != null)
             laptopCanvas.SetActive(false);
 
-        // Smoothly move camera back
         float elapsed = 0f;
         Vector3 currentPos = _camera.transform.position;
         Quaternion currentRot = _camera.transform.rotation;
@@ -111,12 +116,16 @@ public class LaptopInteraction : MonoBehaviour, IInteractable
             yield return null;
         }
 
-        // Re-enable player control
+        // Re-enable follow camera
+        if (playerFollowCamera != null)
+            playerFollowCamera.SetActive(true);
+
         if (firstPersonController != null)
             firstPersonController.enabled = true;
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
         _isUsingLaptop = false;
+        _isAnimating = false;
     }
 }

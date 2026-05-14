@@ -24,22 +24,31 @@ public class RaycastCrosshair : MonoBehaviour
 
     void Update()
     {
-        Ray ray = _camera.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2, 0));
+        // Retry finding camera if null
+        if (_camera == null)
+        {
+            _camera = Camera.main;
+            return;
+        }
 
-        _isHitting = Physics.Raycast(ray, out _hit, raycastDistance, ~0, QueryTriggerInteraction.Collide);
+        Ray ray = _camera.ScreenPointToRay(
+            new Vector3(Screen.width / 2, Screen.height / 2, 0));
 
-        if (_isHitting && _hit.collider.GetComponent<IInteractable>() != null)
+        _isHitting = Physics.Raycast(ray, out _hit, raycastDistance,
+            ~0, QueryTriggerInteraction.Collide);
+
+        if (_isHitting && _hit.collider.GetComponentInParent<IInteractable>() != null)
         {
             if (interactPrompt != null)
                 interactPrompt.text = "Press E to interact";
 
-#if ENABLE_INPUT_SYSTEM
+            #if ENABLE_INPUT_SYSTEM
             if (Keyboard.current.eKey.wasPressedThisFrame)
-#else
-        if (Input.GetKeyDown(KeyCode.E))
-#endif
+            #else
+            if (Input.GetKeyDown(KeyCode.E))
+            #endif
             {
-                _hit.collider.GetComponent<IInteractable>().Interact();
+                _hit.collider.GetComponentInParent<IInteractable>().Interact();
             }
         }
         else
