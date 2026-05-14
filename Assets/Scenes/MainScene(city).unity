@@ -14295,7 +14295,7 @@ Transform:
   m_GameObject: {fileID: 216261213}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2.442, y: 0.077, z: 2.9345}
+  m_LocalPosition: {x: 2.442, y: 1.07, z: 2.9345}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -31417,17 +31417,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 5163388933407742118, guid: 9e64c3698fd822440b812d153d0449ae, type: 3}
   m_PrefabInstance: {fileID: 463642537}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &466167217 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 963430689117235445, guid: 420f5ca630c988941b7248ebd98710ca, type: 3}
-  m_PrefabInstance: {fileID: 3039054016913980671}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
 --- !u!1001 &468256952
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -80725,6 +80714,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 8336895627184170910, guid: ab100b539b567a84196610d02fa643bd, type: 3}
   m_PrefabInstance: {fileID: 1089127307}
   m_PrefabAsset: {fileID: 0}
+--- !u!224 &1089615907 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 6432024021586852956, guid: 420f5ca630c988941b7248ebd98710ca, type: 3}
+  m_PrefabInstance: {fileID: 3039054016913980671}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1089825794
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -84941,6 +84935,7 @@ GameObject:
   - component: {fileID: 1136172694}
   - component: {fileID: 1136172693}
   - component: {fileID: 1136172695}
+  - component: {fileID: 1136172696}
   m_Layer: 0
   m_Name: HouseDoorObject
   m_TagString: Untagged
@@ -84997,6 +84992,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorEntrance
   sceneToLoad: Interior
+--- !u!114 &1136172696
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1136172692}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e22300d2a348ed458449d6357b315a2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InteractableLabel
+  promptText: Enter Home
+  promptOffset: {x: 0, y: 0.5, z: 0}
 --- !u!1001 &1136267132
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -140042,6 +140051,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 6062737929586425112, guid: 53826e13c6534d249891f425d2fb4569, type: 3}
   m_PrefabInstance: {fileID: 1982524992}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1983063353 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7541619029990969470, guid: 420f5ca630c988941b7248ebd98710ca, type: 3}
+  m_PrefabInstance: {fileID: 3039054016913980671}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
 --- !u!1001 &1983985636
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -153978,13 +153998,29 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5530239463483310888, guid: 25ef30186d1a4424db11841cd3562f9a, type: 3}
+      propertyPath: promptPanel
+      value: 
+      objectReference: {fileID: 1089615907}
+    - target: {fileID: 5530239463483310888, guid: 25ef30186d1a4424db11841cd3562f9a, type: 3}
       propertyPath: crosshairDot
       value: 
       objectReference: {fileID: 1107968952}
     - target: {fileID: 5530239463483310888, guid: 25ef30186d1a4424db11841cd3562f9a, type: 3}
       propertyPath: interactPrompt
       value: 
-      objectReference: {fileID: 466167217}
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530239463483310888, guid: 25ef30186d1a4424db11841cd3562f9a, type: 3}
+      propertyPath: promptActionText
+      value: 
+      objectReference: {fileID: 1983063353}
+    - target: {fileID: 6819486372142702079, guid: 25ef30186d1a4424db11841cd3562f9a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.06588402
+      objectReference: {fileID: 0}
+    - target: {fileID: 6819486372142702079, guid: 25ef30186d1a4424db11841cd3562f9a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.14909153
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -154271,6 +154307,62 @@ PrefabInstance:
       propertyPath: m_Name
       value: UICanvas
       objectReference: {fileID: 0}
+    - target: {fileID: 4574487243822500620, guid: 420f5ca630c988941b7248ebd98710ca, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4574487243822500620, guid: 420f5ca630c988941b7248ebd98710ca, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4574487243822500620, guid: 420f5ca630c988941b7248ebd98710ca, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4574487243822500620, guid: 420f5ca630c988941b7248ebd98710ca, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4574487243822500620, guid: 420f5ca630c988941b7248ebd98710ca, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4574487243822500620, guid: 420f5ca630c988941b7248ebd98710ca, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6280876271884991643, guid: 420f5ca630c988941b7248ebd98710ca, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6280876271884991643, guid: 420f5ca630c988941b7248ebd98710ca, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6280876271884991643, guid: 420f5ca630c988941b7248ebd98710ca, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6280876271884991643, guid: 420f5ca630c988941b7248ebd98710ca, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6280876271884991643, guid: 420f5ca630c988941b7248ebd98710ca, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6280876271884991643, guid: 420f5ca630c988941b7248ebd98710ca, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6432024021586852956, guid: 420f5ca630c988941b7248ebd98710ca, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6432024021586852956, guid: 420f5ca630c988941b7248ebd98710ca, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7117545004810524571, guid: 420f5ca630c988941b7248ebd98710ca, type: 3}
       propertyPath: m_Pivot.x
       value: 0
@@ -154351,6 +154443,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7541619029990969470, guid: 420f5ca630c988941b7248ebd98710ca, type: 3}
+      propertyPath: m_text
+      value: 
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -154369,6 +154465,7 @@ GameObject:
   - component: {fileID: 6549607825410278810}
   - component: {fileID: 6549607825408122116}
   - component: {fileID: 6549607825410278811}
+  - component: {fileID: 6549607825410278812}
   m_Layer: 0
   m_Name: SmallHouse_07_Door01
   m_TagString: Untagged
@@ -154407,7 +154504,7 @@ Transform:
   m_GameObject: {fileID: 6549607825408023386}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.09099984, y: -0.04299996, z: -0.006498575}
+  m_LocalPosition: {x: -0.09099984, y: -1.036, z: -0.006498575}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -154486,6 +154583,20 @@ MonoBehaviour:
   hinge: {fileID: 216261214}
   openAngle: 90
   openSpeed: 2
+--- !u!114 &6549607825410278812
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6549607825408023386}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e22300d2a348ed458449d6357b315a2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InteractableLabel
+  promptText: Open Door
+  promptOffset: {x: 0, y: 0.5, z: 0}
 --- !u!23 &6549607825647036743
 MeshRenderer:
   m_ObjectHideFlags: 0

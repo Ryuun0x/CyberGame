@@ -10,23 +10,25 @@ public class RaycastCrosshair : MonoBehaviour
     public Image crosshairDot;
     public float raycastDistance = 3f;
 
-    [Header("World-Space Prompt")]
-    [Tooltip("Root GameObject of the world-space prompt (will be moved to target)")]
-    public GameObject worldPrompt;
-    [Tooltip("The action text label inside the prompt (e.g. 'Use Laptop')")]
+    [Header("Screen-Space Prompt (put inside UICanvas)")]
+    [Tooltip("The prompt panel RectTransform (parent of KeyBadge + ActionText)")]
+    public RectTransform promptPanel;
+    [Tooltip("The action text label (e.g. 'Use Laptop')")]
     public TextMeshProUGUI promptActionText;
-    [Tooltip("Scale multiplier so the prompt stays readable at any distance")]
-    public float baseScale = 0.008f;
 
     private Camera _camera;
+    private Canvas _promptCanvas;
     private RaycastHit _hit;
     private bool _isHitting;
 
     void Start()
     {
         _camera = Camera.main;
-        if (worldPrompt != null)
-            worldPrompt.SetActive(false);
+        if (promptPanel != null)
+        {
+            promptPanel.gameObject.SetActive(false);
+            _promptCanvas = promptPanel.GetComponentInParent<Canvas>();
+        }
     }
 
     void Update()
@@ -51,7 +53,7 @@ public class RaycastCrosshair : MonoBehaviour
 
             if (interactable != null)
             {
-                ShowWorldPrompt(interactable);
+                ShowPrompt(interactable);
 
                 #if ENABLE_INPUT_SYSTEM
                 if (Keyboard.current.eKey.wasPressedThisFrame)
@@ -64,18 +66,18 @@ public class RaycastCrosshair : MonoBehaviour
             }
             else
             {
-                HideWorldPrompt();
+                HidePrompt();
             }
         }
         else
         {
-            HideWorldPrompt();
+            HidePrompt();
         }
     }
 
-    void ShowWorldPrompt(IInteractable interactable)
+    void ShowPrompt(IInteractable interactable)
     {
-        if (worldPrompt == null) return;
+        if (promptPanel == null) return;
 
         MonoBehaviour targetMB = interactable as MonoBehaviour;
         if (targetMB == null) return;
@@ -89,19 +91,31 @@ public class RaycastCrosshair : MonoBehaviour
         if (promptActionText != null)
             promptActionText.text = actionText;
 
-        // Position at object center + offset
-        worldPrompt.transform.position = targetMB.transform.position + offset;
+        // Convert world position to screen position
+        Vector3 worldPos = targetMB.transform.position + offset;
+        Vector3 screenPos = _camera.WorldToScreenPoint(worldPos);
 
-        // Billboard — face the same direction as the camera so text is readable
-        worldPrompt.transform.forward = _camera.transform.forward;
+        // Only show if object is in front of camera
+        if (screenPos.z <= 0f)
+        {
+            HidePrompt();
+            return;
+        }
 
-        worldPrompt.SetActive(true);
+        // Convert screen point to canvas local position
+        RectTransform canvasRect = _promptCanvas.transform as RectTransform;
+        Vector2 localPoint;
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            canvasRect, screenPos, null, out localPoint);
+
+        promptPanel.anchoredPosition = localPoint;
+        promptPanel.gameObject.SetActive(true);
     }
 
-    void HideWorldPrompt()
+    void HidePrompt()
     {
-        if (worldPrompt != null)
-            worldPrompt.SetActive(false);
+        if (promptPanel != null)
+            promptPanel.gameObject.SetActive(false);
     }
 }
 

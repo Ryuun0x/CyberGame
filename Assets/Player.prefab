@@ -564,9 +564,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RaycastCrosshair
   crosshairDot: {fileID: 0}
   raycastDistance: 100
-  worldPrompt: {fileID: 0}
+  promptPanel: {fileID: 0}
   promptActionText: {fileID: 0}
-  baseScale: 0.008
 --- !u!114 &1189311595246581963
 MonoBehaviour:
   m_ObjectHideFlags: 0

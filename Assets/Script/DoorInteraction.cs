@@ -46,5 +46,10 @@ public class CafeDoor : MonoBehaviour, IInteractable
 
         hinge.rotation = target;
         _isAnimating = false;
+
+        // Update prompt text based on door state
+        InteractableLabel label = GetComponent<InteractableLabel>();
+        if (label != null)
+            label.promptText = _isOpen ? "Close Door" : "Open Door";
     }
 }
