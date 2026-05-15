@@ -10,6 +10,11 @@ public class CafeZone : MonoBehaviour
         {
             PlayerInCafe = true;
             Debug.Log("Entered cafe zone");
+
+            if (GameProgressManager.Instance != null)
+            {
+                GameProgressManager.Instance.ArriveAtCafe();
+            }
         }
     }
 

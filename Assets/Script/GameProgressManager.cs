@@ -16,12 +16,16 @@ public class GameProgressManager : MonoBehaviour
     public bool thesisBackedUp = false;
     public bool is2FAEnabled = false;
     public bool triedSubmitWithoutInternet = false;
+    public bool arrivedAtCafe = false;
+    public bool connectedToCafeWiFi = false;
 
     // ── Events (other scripts subscribe to these) ──────────
     public event Action OnFlashDrivePickedUp;
     public event Action OnThesisBackedUp;
     public event Action On2FAEnabled;
     public event Action OnTriedSubmit;
+    public event Action OnArrivedAtCafe;
+    public event Action OnConnectedToCafeWiFi;
 
     void Awake()
     {
@@ -76,5 +80,23 @@ public class GameProgressManager : MonoBehaviour
         triedSubmitWithoutInternet = true;
         Debug.Log("[GameProgress] Player tried to submit without internet.");
         OnTriedSubmit?.Invoke();
+    }
+
+    public void ArriveAtCafe()
+    {
+        if (arrivedAtCafe) return; // already tracked
+        
+        arrivedAtCafe = true;
+        Debug.Log("[GameProgress] Arrived at the cafe!");
+        OnArrivedAtCafe?.Invoke();
+    }
+
+    public void ConnectToCafeWiFi()
+    {
+        if (connectedToCafeWiFi) return; // already tracked
+        
+        connectedToCafeWiFi = true;
+        Debug.Log("[GameProgress] Connected to the real cafe WiFi!");
+        OnConnectedToCafeWiFi?.Invoke();
     }
 }

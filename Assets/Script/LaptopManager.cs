@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections;
+using UnityEngine.SceneManagement;
 
 public class LaptopDesktop : MonoBehaviour
 {
@@ -14,6 +15,11 @@ public class LaptopDesktop : MonoBehaviour
     public GameObject backupButton;
     [Tooltip("Optional: popup/message shown after successful backup")]
     public GameObject backupSuccessPopup;
+
+    [Header("Cafe Outcomes")]
+    [Tooltip("Assign your Canvas/Popup here that will show if the player gets hacked by the evil twin.")]
+    public GameObject compromisedPopup;
+    public GameObject successPopup;
 
     [Header("Taskbar")]
     public TextMeshProUGUI timeText;
@@ -58,6 +64,39 @@ public class LaptopDesktop : MonoBehaviour
         // Update taskbar clock
         if (timeText != null)
             timeText.text = System.DateTime.Now.ToString("h:mm tt");
+
+        // Sync laptop Wi-Fi icon with Phone's Wi-Fi connection (Cafe scene only)
+        bool isInterior = SceneManager.GetActiveScene().name == "Interior" || SceneManager.GetActiveScene().name == "MainScene";
+        if (!isInterior)
+        {
+            WiFiManager wifiManager = FindObjectOfType<WiFiManager>(true);
+            if (wifiManager != null)
+            {
+                string network = wifiManager.GetConnectedNetwork();
+                bool hasConnection = (network == "CafeReal" || network == "Evil1" || network == "Evil2");
+                
+                // Hide or show the 'No Internet' X over the wifi icon
+                if (noInternetIcon != null)
+                {
+                    noInternetIcon.SetActive(!hasConnection); 
+                }
+
+                // Constantly update the tooltip if it's open
+                if (wifiTooltip != null && wifiTooltip.activeSelf && tooltipStatus != null)
+                {
+                    if (hasConnection)
+                    {
+                        tooltipStatus.text = "Connected: " + network;
+                        tooltipStatus.color = new Color(0.67f, 0.67f, 0.67f); // Normal grey
+                    }
+                    else
+                    {
+                        tooltipStatus.text = "No Internet access";
+                        tooltipStatus.color = new Color(1f, 0.4f, 0.4f); // Red error color
+                    }
+                }
+            }
+        }
     }
 
     // Called when WifiIcon is clicked
@@ -118,6 +157,47 @@ public class LaptopDesktop : MonoBehaviour
     // Called by Submit button in BottomBar
     public void SubmitThesis()
     {
+        bool isInterior = SceneManager.GetActiveScene().name == "Interior" || SceneManager.GetActiveScene().name == "MainScene"; // Adjust if your interior scene is named differently
+
+        if (!isInterior)
+        {
+            // ── CAFE LOGIC: Check the phone's WiFi connection ──
+            // We pass 'true' to find the WiFiManager even if the phone screen is currently closed/hidden
+            WiFiManager wifiManager = FindObjectOfType<WiFiManager>(true);
+            if (wifiManager != null)
+            {
+                string network = wifiManager.GetConnectedNetwork();
+                
+                if (network == "CafeReal")
+                {
+                    Debug.Log("Thesis submitted safely via CafeWifi67!");
+                    StartCoroutine(PlayCafeSuccessNarration());
+                    CloseThesis();
+                }
+                else if (network == "Evil1" || network == "Evil2")
+                {
+                    Debug.Log("Submitted via Evil Twin! Data stolen!");
+                    StartCoroutine(PlayCafeHackedNarration());
+                    
+                    if (compromisedPopup != null) compromisedPopup.SetActive(true);
+
+                    CloseThesis(); // Hide the thesis so the player sees the popup
+                }
+                else
+                {
+                    Debug.Log("Not connected to WiFi in cafe.");
+                    StartCoroutine(PlayCafeNoWifiNarration());
+                }
+            }
+            else
+            {
+                Debug.LogWarning("WiFiManager not found! The Phone must be in the scene.");
+                StartCoroutine(PlayCafeNoWifiNarration());
+            }
+            return;
+        }
+
+        // ── INTERIOR LOGIC (Old Behavior) ──
         if (_hasInternet)
         {
             // Internet still up (unlikely with 2s delay)
@@ -133,7 +213,7 @@ public class LaptopDesktop : MonoBehaviour
             if (GameProgressManager.Instance != null)
                 GameProgressManager.Instance.MarkTriedSubmit();
 
-            // ── NEW: Frustration & Hint Narration (Sequential) ────────
+            // Frustration & Hint Narration (Sequential)
             StartCoroutine(PlayFrustrationNarration());
 
             if (noInternetPopup != null)
@@ -206,8 +286,22 @@ public class LaptopDesktop : MonoBehaviour
             backupSuccessPopup.SetActive(false);
     }
 
+    // Called by a Close/OK button on the Compromised Popup
+    public void CloseCompromisedPopup()
+    {
+        if (compromisedPopup != null)
+            compromisedPopup.SetActive(false);
+    }
+
     IEnumerator LoseInternetAfterDelay()
     {
+        bool isInterior = SceneManager.GetActiveScene().name == "Interior" || SceneManager.GetActiveScene().name == "MainScene";
+        if (!isInterior)
+        {
+            // In the cafe, internet isn't lost automatically. It depends on the phone.
+            yield break;
+        }
+
         Debug.Log("Coroutine STARTED - _hasInternet = " + _hasInternet);
         yield return new WaitForSecondsRealtime(internetLostDelay);
         
@@ -262,5 +356,37 @@ public class LaptopDesktop : MonoBehaviour
             yield return new WaitForSecondsRealtime(3f);
             NarrationManager.Instance.Show("Now I just need to head out to the cafe to find some wifi and send this off.", 4.5f);
         }
+    }
+
+    // ── CAFE NARRATION OUTCOMES ──
+
+    IEnumerator PlayCafeSuccessNarration()
+    {
+        if (NarrationManager.Instance == null) yield break;
+        NarrationManager.Instance.Show("Uploading... Done!", 2.5f);
+        yield return new WaitForSecondsRealtime(3f);
+        NarrationManager.Instance.Show("Perfect. The thesis is submitted securely.", 3.5f);
+        yield return new WaitForSecondsRealtime(4f);
+        NarrationManager.Instance.Show("Looks like I'm finally done! Time to relax.", 4f);
+        // TODO: Trigger Game Over / Win Screen here
+    }
+
+    IEnumerator PlayCafeHackedNarration()
+    {
+        if (NarrationManager.Instance == null) yield break;
+        NarrationManager.Instance.Show("Uploading...", 2f);
+        yield return new WaitForSecondsRealtime(2.5f);
+        NarrationManager.Instance.Show("Wait... why is the connection unencrypted?", 3.5f);
+        yield return new WaitForSecondsRealtime(4f);
+        NarrationManager.Instance.Show("Oh no. Someone is intercepting my data!", 3.5f);
+        // TODO: Trigger Game Over / Lose Screen here
+    }
+
+    IEnumerator PlayCafeNoWifiNarration()
+    {
+        if (NarrationManager.Instance == null) yield break;
+        NarrationManager.Instance.Show("I'm not connected to the internet.", 3f);
+        yield return new WaitForSecondsRealtime(3.5f);
+        NarrationManager.Instance.Show("I should use my phone to connect to the Cafe Wi-Fi first.", 4f);
     }
 }

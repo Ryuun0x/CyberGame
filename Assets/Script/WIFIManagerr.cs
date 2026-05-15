@@ -253,6 +253,17 @@ public class WiFiManager : MonoBehaviour
             if (checkCafeReal != null) checkCafeReal.SetActive(true);
             if (wifiStatusIcon != null) wifiStatusIcon.SetActive(true);
             Debug.Log("Connected to real CafeWifi67 safely!");
+
+            // Complete the Objective Sub-Task for finding the correct Wi-Fi by routing it through GameProgressManager
+            if (GameProgressManager.Instance != null)
+            {
+                GameProgressManager.Instance.ConnectToCafeWiFi();
+            }
+            else if (ObjectiveManager.Instance != null) 
+            {
+                // Fallback just in case GameProgressManager isn't there
+                ObjectiveManager.Instance.CompleteSubTask(4, 0);
+            }
         }
         else
         {
@@ -284,5 +295,11 @@ public class WiFiManager : MonoBehaviour
         _savedNetwork = "";
         DisconnectAll();
         Debug.Log("Network forgotten");
+    }
+
+    // Allows the Laptop to check which WiFi the phone is connected to
+    public string GetConnectedNetwork()
+    {
+        return _connectedNetwork;
     }
 }

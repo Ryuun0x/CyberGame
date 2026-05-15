@@ -51,54 +51,10 @@ public class ObjectiveManager : MonoBehaviour
     {
         public string title;
         public SubTask[] subTasks;
-
-        [TextArea]
-        [Tooltip("Optional narration hint shown when this objective starts (leave empty to skip)")]
-        public string hint;
     }
 
-    [Header("Hint Timing")]
-    [Tooltip("Seconds to wait after objective appears before showing the hint narration")]
-    public float hintDelay = 2f;
-
-    [Header("Objectives (in order)")]
-    public Objective[] objectives = new Objective[]
-    {
-        new Objective
-        {
-            title = "Morning Routine",
-            subTasks = new SubTask[]
-            {
-                new SubTask { description = "Check your laptop and submit your thesis" }
-            }
-        },
-        new Objective
-        {
-            title = "No Connection",
-            subTasks = new SubTask[]
-            {
-                new SubTask { description = "Find a flash drive to backup your thesis" }
-            }
-        },
-        new Objective
-        {
-            title = "Secure Your Work",
-            subTasks = new SubTask[]
-            {
-                new SubTask { description = "Backup your thesis using the flash drive" },
-                new SubTask { description = "Enable 2FA on your phone" }
-            },
-            hint = "Press [Tab] to open your phone."
-        },
-        new Objective
-        {
-            title = "Time to Go",
-            subTasks = new SubTask[]
-            {
-                new SubTask { description = "Head to the café" }
-            }
-        },
-    };
+    [HideInInspector]
+    public Objective[] objectives;
 
     private int _currentIndex = -1;
     private bool _isTransitioning = false;
@@ -113,6 +69,45 @@ public class ObjectiveManager : MonoBehaviour
         }
         Instance = this;
 
+        // Hardcode objectives here so the Unity Inspector doesn't override them
+        objectives = new Objective[]
+        {
+            new Objective
+            {
+                title = "Morning Routine",
+                subTasks = new SubTask[] { new SubTask { description = "Check your laptop and submit your thesis." } }
+            },
+            new Objective
+            {
+                title = "No Connection",
+                subTasks = new SubTask[] { new SubTask { description = "Find a flash drive to backup your thesis." } }
+            },
+            new Objective
+            {
+                title = "Secure Your Work",
+                subTasks = new SubTask[]
+                {
+                    new SubTask { description = "Backup your thesis using the flash drive." },
+                    new SubTask { description = "Enable 2FA on your phone." }
+                }
+            },
+            new Objective
+            {
+                title = "Time to Go",
+                subTasks = new SubTask[] { new SubTask { description = "Grab your things, leave the house, and head over to the local café." } }
+            },
+            new Objective
+            {
+                title = "Get Connected",
+                subTasks = new SubTask[] { new SubTask { description = "Check your phone's Wi-Fi. Identify and connect to the real café network (avoid the fake ones!)." } }
+            },
+            new Objective
+            {
+                title = "Submit Thesis",
+                subTasks = new SubTask[] { new SubTask { description = "Open your laptop and finally submit your thesis." } }
+            }
+        };
+
         // Hide the template — it's only used for cloning
         if (subTaskTemplate != null)
             subTaskTemplate.gameObject.SetActive(false);
@@ -126,10 +121,12 @@ public class ObjectiveManager : MonoBehaviour
         // Subscribe to game progress events
         if (GameProgressManager.Instance != null)
         {
-            GameProgressManager.Instance.OnTriedSubmit       += () => CompleteAndAdvance(0, 0);
-            GameProgressManager.Instance.OnFlashDrivePickedUp += () => CompleteAndAdvance(1, 0);
-            GameProgressManager.Instance.OnThesisBackedUp     += () => CompleteSubTask(2, 0);
-            GameProgressManager.Instance.On2FAEnabled          += () => CompleteSubTask(2, 1);
+            GameProgressManager.Instance.OnTriedSubmit       += HandleTriedSubmit;
+            GameProgressManager.Instance.OnFlashDrivePickedUp += HandleFlashDrivePickedUp;
+            GameProgressManager.Instance.OnThesisBackedUp     += HandleThesisBackedUp;
+            GameProgressManager.Instance.On2FAEnabled          += Handle2FAEnabled;
+            GameProgressManager.Instance.OnArrivedAtCafe       += HandleArrivedAtCafe;
+            GameProgressManager.Instance.OnConnectedToCafeWiFi += HandleConnectedToCafeWiFi;
         }
 
         // Determine which objective to show based on current progress
@@ -155,7 +152,13 @@ public class ObjectiveManager : MonoBehaviour
         }
 
         var gp = GameProgressManager.Instance;
-        Debug.Log($"[Objective] Flags → triedSubmit:{gp.triedSubmitWithoutInternet} hasFlash:{gp.hasFlashDrive} backedUp:{gp.thesisBackedUp} 2FA:{gp.is2FAEnabled}");
+        Debug.Log($"[Objective] Flags → triedSubmit:{gp.triedSubmitWithoutInternet} hasFlash:{gp.hasFlashDrive} backedUp:{gp.thesisBackedUp} 2FA:{gp.is2FAEnabled} arrivedCafe:{gp.arrivedAtCafe} connectedCafe:{gp.connectedToCafeWiFi}");
+
+        // If connected to cafe WiFi -> show "Submit Thesis"
+        if (gp.connectedToCafeWiFi) return 5;
+
+        // If arrived at cafe -> show "Get Connected"
+        if (gp.arrivedAtCafe) return 4;
 
         // If 2FA is done → show "Time to Go"
         if (gp.is2FAEnabled && gp.thesisBackedUp) return 3;
@@ -214,17 +217,6 @@ public class ObjectiveManager : MonoBehaviour
 
         if (canvasGroup != null)
             StartCoroutine(FadeIn());
-
-        // Show optional hint narration after a delay
-        if (!string.IsNullOrEmpty(obj.hint))
-            StartCoroutine(ShowHintAfterDelay(obj.hint));
-    }
-
-    IEnumerator ShowHintAfterDelay(string hint)
-    {
-        yield return new WaitForSeconds(hintDelay);
-        if (NarrationManager.Instance != null)
-            NarrationManager.Instance.Show(hint);
     }
 
     public void CompleteSubTask(int objectiveIndex, int subTaskIndex)
@@ -259,6 +251,27 @@ public class ObjectiveManager : MonoBehaviour
     {
         if (objectiveIndex != _currentIndex) return;
         CompleteSubTask(objectiveIndex, subTaskIndex);
+    }
+
+    // ── Event Handlers ──────────────────────────────────────
+    private void HandleTriedSubmit() { CompleteAndAdvance(0, 0); }
+    private void HandleFlashDrivePickedUp() { CompleteAndAdvance(1, 0); }
+    private void HandleThesisBackedUp() { CompleteSubTask(2, 0); }
+    private void Handle2FAEnabled() { CompleteSubTask(2, 1); }
+    private void HandleArrivedAtCafe() { CompleteAndAdvance(3, 0); }
+    private void HandleConnectedToCafeWiFi() { CompleteAndAdvance(4, 0); }
+
+    void OnDestroy()
+    {
+        if (GameProgressManager.Instance != null)
+        {
+            GameProgressManager.Instance.OnTriedSubmit       -= HandleTriedSubmit;
+            GameProgressManager.Instance.OnFlashDrivePickedUp -= HandleFlashDrivePickedUp;
+            GameProgressManager.Instance.OnThesisBackedUp     -= HandleThesisBackedUp;
+            GameProgressManager.Instance.On2FAEnabled          -= Handle2FAEnabled;
+            GameProgressManager.Instance.OnArrivedAtCafe       -= HandleArrivedAtCafe;
+            GameProgressManager.Instance.OnConnectedToCafeWiFi -= HandleConnectedToCafeWiFi;
+        }
     }
 
     // ── Internal ────────────────────────────────────────────
