@@ -41,9 +41,9 @@ public class WakeUpSequence : MonoBehaviour
 
     private string[] _dialogueLines = new string[]
     {
-        "Another morning...",
-        "Today I'm heading to the cafe to finish some work.",
-        "Better check my phone first.",
+        "Ugh... my head.",
+        "I was up all night finishing that thesis...",
+        "It's due today! I better check my laptop and submit it right now."
     };
 
     void Start()

@@ -65,6 +65,8 @@ Assets/Script/
  iOSToggle.cs
  LaptopInteraction.cs
  LaptopManager.cs
+ MainMenuEffects.cs
+ MainMenuManager.cs
  NarrationBox.cs
  ObjectiveManager.cs
  Phone2FA.cs

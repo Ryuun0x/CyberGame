@@ -80,6 +80,8 @@ public class Phone2FA : MonoBehaviour
 
         GameProgressManager.Instance.Enable2FA();
         RefreshUI();
+
+        StartCoroutine(Play2FANarration());
     }
 
     /// <summary>
@@ -109,5 +111,25 @@ public class Phone2FA : MonoBehaviour
             enableButton.SetActive(!isSecure);
 
 
+    }
+
+    System.Collections.IEnumerator Play2FANarration()
+    {
+        if (NarrationManager.Instance == null) yield break;
+
+        if (GameProgressManager.Instance.thesisBackedUp)
+        {
+            NarrationManager.Instance.Show("2FA is on.", 2.5f);
+            yield return new WaitForSecondsRealtime(3f);
+            NarrationManager.Instance.Show("Okay, everything's secure.", 2.5f);
+            yield return new WaitForSecondsRealtime(3f);
+            NarrationManager.Instance.Show("Now I just need to head out to the cafe to find some wifi and send this off.", 4.5f);
+        }
+        else
+        {
+            NarrationManager.Instance.Show("2FA is on.", 2.5f);
+            yield return new WaitForSecondsRealtime(3f);
+            NarrationManager.Instance.Show("I still need to back up my thesis on the laptop before I go anywhere.", 4f);
+        }
     }
 }

@@ -133,6 +133,9 @@ public class LaptopDesktop : MonoBehaviour
             if (GameProgressManager.Instance != null)
                 GameProgressManager.Instance.MarkTriedSubmit();
 
+            // ── NEW: Frustration & Hint Narration (Sequential) ────────
+            StartCoroutine(PlayFrustrationNarration());
+
             if (noInternetPopup != null)
             {
                 noInternetPopup.SetActive(true);
@@ -183,9 +186,8 @@ public class LaptopDesktop : MonoBehaviour
         if (backupButton != null)
             backupButton.SetActive(false);
 
-        // Show success popup if assigned
-        if (backupSuccessPopup != null)
-            backupSuccessPopup.SetActive(true);
+        // ── NEW: 2FA / Cafe Prompt Narration ───────────────────────
+        StartCoroutine(PlayBackupNarration());
 
         Debug.Log("Thesis backed up to flash drive!");
     }
@@ -227,5 +229,38 @@ public class LaptopDesktop : MonoBehaviour
         yield return new WaitForSecondsRealtime(delay);
         if (popup != null)
             popup.SetActive(false);
+    }
+
+    IEnumerator PlayFrustrationNarration()
+    {
+        if (NarrationManager.Instance == null) yield break;
+
+        NarrationManager.Instance.Show("What?! No internet? You've got to be kidding me!", 3.5f);
+        yield return new WaitForSecondsRealtime(4f);
+
+        NarrationManager.Instance.Show("I need to find a flash drive to back this up...", 3.5f);
+        yield return new WaitForSecondsRealtime(4f);
+
+        NarrationManager.Instance.Show("I think I left one in the living room.", 3.5f);
+    }
+
+    IEnumerator PlayBackupNarration()
+    {
+        if (NarrationManager.Instance == null) yield break;
+
+        if (!GameProgressManager.Instance.is2FAEnabled)
+        {
+            NarrationManager.Instance.Show("Phew, thesis is backed up.", 3f);
+            yield return new WaitForSecondsRealtime(3.5f);
+            NarrationManager.Instance.Show("I still need to turn on 2FA on my phone before heading out.", 4f);
+        }
+        else
+        {
+            NarrationManager.Instance.Show("Thesis is backed up.", 2.5f);
+            yield return new WaitForSecondsRealtime(3f);
+            NarrationManager.Instance.Show("Okay, everything's secure.", 2.5f);
+            yield return new WaitForSecondsRealtime(3f);
+            NarrationManager.Instance.Show("Now I just need to head out to the cafe to find some wifi and send this off.", 4.5f);
+        }
     }
 }

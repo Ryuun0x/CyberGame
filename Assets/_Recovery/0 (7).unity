@@ -28418,26 +28418,6 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 1347655252167563531, guid: ba530845019f8cd44b81145e9d6ae95b, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3249915519756655306, guid: ba530845019f8cd44b81145e9d6ae95b, type: 3}
-      propertyPath: m_AnchorMax.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3249915519756655306, guid: ba530845019f8cd44b81145e9d6ae95b, type: 3}
-      propertyPath: m_AnchorMin.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3249915519756655306, guid: ba530845019f8cd44b81145e9d6ae95b, type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3249915519756655306, guid: ba530845019f8cd44b81145e9d6ae95b, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 3681210788240550548, guid: ba530845019f8cd44b81145e9d6ae95b, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -28465,18 +28445,6 @@ PrefabInstance:
     - target: {fileID: 4383328038638793306, guid: ba530845019f8cd44b81145e9d6ae95b, type: 3}
       propertyPath: m_SizeDelta.y
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4834938929391338808, guid: ba530845019f8cd44b81145e9d6ae95b, type: 3}
-      propertyPath: m_SizeDelta.x
-      value: 40
-      objectReference: {fileID: 0}
-    - target: {fileID: 4834938929391338808, guid: ba530845019f8cd44b81145e9d6ae95b, type: 3}
-      propertyPath: m_SizeDelta.y
-      value: 40
-      objectReference: {fileID: 0}
-    - target: {fileID: 4913444806322593657, guid: ba530845019f8cd44b81145e9d6ae95b, type: 3}
-      propertyPath: m_IsActive
-      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5839875066865869068, guid: ba530845019f8cd44b81145e9d6ae95b, type: 3}
       propertyPath: initialDelay
