@@ -31,7 +31,11 @@ public class NarrationManager : MonoBehaviour
 
     void Start()
     {
-        NarrationManager.Instance.Show("Ugh... Thesis is due at noon. I better check if the file synced.");
+        // Only show the opening narration if the player hasn't progressed yet
+        if (GameProgressManager.Instance == null || !GameProgressManager.Instance.triedSubmitWithoutInternet)
+        {
+            NarrationManager.Instance.Show("Ugh... Thesis is due at noon. I better check if the file synced.");
+        }
     }
 
     public void Show(string message, float duration = 4f)
@@ -65,7 +69,7 @@ public class NarrationManager : MonoBehaviour
         _boxRect.pivot = new Vector2(0.5f, 0f);
         _boxRect.anchoredPosition = new Vector2(0, bottomOffset);
 
-        // NOW show it — already correct size
+        // NOW show it - already correct size
         narrationBox.SetActive(true);
 
         yield return new WaitForSeconds(duration);

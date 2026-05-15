@@ -51,7 +51,15 @@ public class ObjectiveManager : MonoBehaviour
     {
         public string title;
         public SubTask[] subTasks;
+
+        [TextArea]
+        [Tooltip("Optional narration hint shown when this objective starts (leave empty to skip)")]
+        public string hint;
     }
+
+    [Header("Hint Timing")]
+    [Tooltip("Seconds to wait after objective appears before showing the hint narration")]
+    public float hintDelay = 2f;
 
     [Header("Objectives (in order)")]
     public Objective[] objectives = new Objective[]
@@ -79,7 +87,8 @@ public class ObjectiveManager : MonoBehaviour
             {
                 new SubTask { description = "Backup your thesis using the flash drive" },
                 new SubTask { description = "Enable 2FA on your phone" }
-            }
+            },
+            hint = "Press [Tab] to open your phone."
         },
         new Objective
         {
@@ -123,10 +132,42 @@ public class ObjectiveManager : MonoBehaviour
             GameProgressManager.Instance.On2FAEnabled          += () => CompleteSubTask(2, 1);
         }
 
-        if (initialDelay > 0f)
+        // Determine which objective to show based on current progress
+        int startIndex = GetCurrentObjectiveFromProgress();
+        Debug.Log($"[Objective] Starting at objective index: {startIndex}");
+
+        if (initialDelay > 0f && startIndex == 0)
             StartCoroutine(ShowFirstObjectiveAfterDelay());
         else
-            SetObjective(0);
+            SetObjective(startIndex);
+    }
+
+    /// <summary>
+    /// Reads GameProgressManager flags to figure out which objective to show.
+    /// This lets the prefab work in any scene without losing progress.
+    /// </summary>
+    int GetCurrentObjectiveFromProgress()
+    {
+        if (GameProgressManager.Instance == null)
+        {
+            Debug.LogWarning("[Objective] GameProgressManager.Instance is NULL! Defaulting to objective 0.");
+            return 0;
+        }
+
+        var gp = GameProgressManager.Instance;
+        Debug.Log($"[Objective] Flags → triedSubmit:{gp.triedSubmitWithoutInternet} hasFlash:{gp.hasFlashDrive} backedUp:{gp.thesisBackedUp} 2FA:{gp.is2FAEnabled}");
+
+        // If 2FA is done → show "Time to Go"
+        if (gp.is2FAEnabled && gp.thesisBackedUp) return 3;
+
+        // If flash drive picked up → show "Secure Your Work"
+        if (gp.hasFlashDrive) return 2;
+
+        // If tried to submit → show "No Connection"
+        if (gp.triedSubmitWithoutInternet) return 1;
+
+        // Default → first objective
+        return 0;
     }
 
     IEnumerator ShowFirstObjectiveAfterDelay()
@@ -173,6 +214,17 @@ public class ObjectiveManager : MonoBehaviour
 
         if (canvasGroup != null)
             StartCoroutine(FadeIn());
+
+        // Show optional hint narration after a delay
+        if (!string.IsNullOrEmpty(obj.hint))
+            StartCoroutine(ShowHintAfterDelay(obj.hint));
+    }
+
+    IEnumerator ShowHintAfterDelay(string hint)
+    {
+        yield return new WaitForSeconds(hintDelay);
+        if (NarrationManager.Instance != null)
+            NarrationManager.Instance.Show(hint);
     }
 
     public void CompleteSubTask(int objectiveIndex, int subTaskIndex)

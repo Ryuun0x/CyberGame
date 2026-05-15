@@ -10,6 +10,10 @@ public class RaycastCrosshair : MonoBehaviour
     public Image crosshairDot;
     public float raycastDistance = 3f;
 
+    [Header("Gatekeep Visual")]
+    [Tooltip("Prompt text color when interaction is locked")]
+    public Color lockedPromptColor = new Color(0.6f, 0.6f, 0.6f, 1f);
+
     [Header("Screen-Space Prompt (put inside UICanvas)")]
     [Tooltip("The prompt panel RectTransform (parent of KeyBadge + ActionText)")]
     public RectTransform promptPanel;
@@ -53,7 +57,14 @@ public class RaycastCrosshair : MonoBehaviour
 
             if (interactable != null)
             {
-                ShowPrompt(interactable);
+                // ── Gatekeep Check ──────────────────────────────
+                MonoBehaviour targetMB = interactable as MonoBehaviour;
+                GatekeepRequirement gate = targetMB != null
+                    ? targetMB.GetComponent<GatekeepRequirement>()
+                    : null;
+                bool isLocked = gate != null && !gate.IsAllowed();
+
+                ShowPrompt(interactable, gate, isLocked);
 
                 #if ENABLE_INPUT_SYSTEM
                 if (Keyboard.current.eKey.wasPressedThisFrame)
@@ -61,7 +72,16 @@ public class RaycastCrosshair : MonoBehaviour
                 if (Input.GetKeyDown(KeyCode.E))
                 #endif
                 {
-                    interactable.Interact();
+                    if (isLocked)
+                    {
+                        // Blocked — show narration hint instead
+                        if (NarrationManager.Instance != null)
+                            NarrationManager.Instance.Show(gate.blockedNarration);
+                    }
+                    else
+                    {
+                        interactable.Interact();
+                    }
                 }
             }
             else
@@ -75,7 +95,8 @@ public class RaycastCrosshair : MonoBehaviour
         }
     }
 
-    void ShowPrompt(IInteractable interactable)
+    void ShowPrompt(IInteractable interactable,
+                    GatekeepRequirement gate, bool isLocked)
     {
         if (promptPanel == null) return;
 
@@ -87,9 +108,16 @@ public class RaycastCrosshair : MonoBehaviour
         string actionText = label != null ? label.promptText : "Interact";
         Vector3 offset = label != null ? label.promptOffset : new Vector3(0f, 0.5f, 0f);
 
-        // Update text
+        // Override prompt text if locked and override is set
+        if (isLocked && gate != null && !string.IsNullOrEmpty(gate.lockedPromptOverride))
+            actionText = gate.lockedPromptOverride;
+
+        // Update text and color
         if (promptActionText != null)
+        {
             promptActionText.text = actionText;
+            promptActionText.color = isLocked ? lockedPromptColor : Color.white;
+        }
 
         // Convert world position to screen position
         Vector3 worldPos = targetMB.transform.position + offset;

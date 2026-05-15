@@ -60,6 +60,7 @@ Assets/Script/
  ExitDoor.cs
  FlashDrivePickup.cs
  GameProgressManager.cs
+ GateKeepRequirements.cs
  InteractableLabel.cs
  iOSToggle.cs
  LaptopInteraction.cs
