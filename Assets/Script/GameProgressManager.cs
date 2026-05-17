@@ -12,6 +12,7 @@ public class GameProgressManager : MonoBehaviour
 
     // ── Progression Flags ──────────────────────────────────
     [Header("Progression State (read-only in Inspector)")]
+    public bool wakeUpPlayed = false;
     public bool hasFlashDrive = false;
     public bool thesisBackedUp = false;
     public bool is2FAEnabled = false;

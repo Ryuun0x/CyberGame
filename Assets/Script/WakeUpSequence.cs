@@ -36,8 +36,6 @@ public class WakeUpSequence : MonoBehaviour
     public Transform spawnBed;
     public Transform spawnDoor;
 
-    [Header("Testing")]
-    public bool resetOnPlay = true; // ← uncheck this for final build
 
     private string[] _dialogueLines = new string[]
     {
@@ -48,10 +46,6 @@ public class WakeUpSequence : MonoBehaviour
 
     void Start()
     {
-        // Reset for testing — uncheck resetOnPlay when done testing
-        if (resetOnPlay)
-            PlayerPrefs.DeleteKey("WakeUpPlayed");
-
         cinematicCamera.enabled = true;
         playerCamera.enabled = false;
         player.SetActive(false);
@@ -59,18 +53,27 @@ public class WakeUpSequence : MonoBehaviour
         if (narrationBox != null)
             narrationBox.SetActive(false);
 
-        if (PlayerPrefs.GetInt("WakeUpPlayed", 0) == 0)
+        // Check GameProgressManager instead of PlayerPrefs
+        // Since GPM is DontDestroyOnLoad, this resets when you restart the game
+        // but survives scene transitions (going outside and back inside)
+        bool alreadyPlayed = GameProgressManager.Instance != null
+                             && GameProgressManager.Instance.wakeUpPlayed;
+
+        if (!alreadyPlayed)
         {
             // First time — spawn at bed, play cinematic
             if (spawnBed != null)
                 player.transform.position = spawnBed.position;
 
-            PlayerPrefs.SetInt("WakeUpPlayed", 1);
+            // Mark as played so it won't replay when returning to this scene
+            if (GameProgressManager.Instance != null)
+                GameProgressManager.Instance.wakeUpPlayed = true;
+
             StartCoroutine(PlayWakeUpSequence());
         }
         else
         {
-            // Returning — spawn at door, skip cinematic
+            // Returning from outside — spawn at door, skip cinematic
             if (spawnDoor != null)
                 player.transform.position = spawnDoor.position;
 

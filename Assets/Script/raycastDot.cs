@@ -8,7 +8,10 @@ using UnityEngine.InputSystem;
 public class RaycastCrosshair : MonoBehaviour
 {
     public Image crosshairDot;
+
+    [Tooltip("Max distance (in units) the player can interact with objects")]
     public float raycastDistance = 3f;
+    private const float MAX_INTERACT_DISTANCE = 3f;
 
     [Header("Gatekeep Visual")]
     [Tooltip("Prompt text color when interaction is locked")]
@@ -44,13 +47,16 @@ public class RaycastCrosshair : MonoBehaviour
             return;
         }
 
+        // Use the hardcoded constant so Inspector serialization can't break it
+        float maxDist = MAX_INTERACT_DISTANCE;
+
         Ray ray = _camera.ScreenPointToRay(
             new Vector3(Screen.width / 2, Screen.height / 2, 0));
 
-        _isHitting = Physics.Raycast(ray, out _hit, raycastDistance,
-            ~0, QueryTriggerInteraction.Collide);
+        _isHitting = Physics.Raycast(ray, out _hit, maxDist,
+            ~0, QueryTriggerInteraction.Ignore);
 
-        if (_isHitting)
+        if (_isHitting && _hit.distance <= maxDist)
         {
             IInteractable interactable =
                 _hit.collider.GetComponentInParent<IInteractable>();
