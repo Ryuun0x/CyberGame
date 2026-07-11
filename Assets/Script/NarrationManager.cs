@@ -23,6 +23,11 @@ public class NarrationManager : MonoBehaviour
 
     void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
         Instance = this;
         _boxRect = narrationBox.GetComponent<RectTransform>();
         _canvas = GetComponentInParent<Canvas>();

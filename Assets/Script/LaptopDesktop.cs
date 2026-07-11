@@ -66,10 +66,10 @@ public class LaptopDesktop : MonoBehaviour
             timeText.text = System.DateTime.Now.ToString("h:mm tt");
 
         // Sync laptop Wi-Fi icon with Phone's Wi-Fi connection (Cafe scene only)
-        bool isInterior = SceneManager.GetActiveScene().name == "Interior" || SceneManager.GetActiveScene().name == "MainScene";
+        bool isInterior = SceneManager.GetActiveScene().name == "Interior";
         if (!isInterior)
         {
-            WiFiManager wifiManager = FindObjectOfType<WiFiManager>(true);
+            WiFiManager wifiManager = FindFirstObjectByType<WiFiManager>(FindObjectsInactive.Include);
             if (wifiManager != null)
             {
                 string network = wifiManager.GetConnectedNetwork();
@@ -157,13 +157,13 @@ public class LaptopDesktop : MonoBehaviour
     // Called by Submit button in BottomBar
     public void SubmitThesis()
     {
-        bool isInterior = SceneManager.GetActiveScene().name == "Interior" || SceneManager.GetActiveScene().name == "MainScene"; // Adjust if your interior scene is named differently
+        bool isInterior = SceneManager.GetActiveScene().name == "Interior"; // Adjust if your interior scene is named differently
 
         if (!isInterior)
         {
             // ── CAFE LOGIC: Check the phone's WiFi connection ──
             // We pass 'true' to find the WiFiManager even if the phone screen is currently closed/hidden
-            WiFiManager wifiManager = FindObjectOfType<WiFiManager>(true);
+            WiFiManager wifiManager = FindFirstObjectByType<WiFiManager>(FindObjectsInactive.Include);
             if (wifiManager != null)
             {
                 string network = wifiManager.GetConnectedNetwork();
@@ -295,7 +295,7 @@ public class LaptopDesktop : MonoBehaviour
 
     IEnumerator LoseInternetAfterDelay()
     {
-        bool isInterior = SceneManager.GetActiveScene().name == "Interior" || SceneManager.GetActiveScene().name == "MainScene";
+        bool isInterior = SceneManager.GetActiveScene().name == "Interior";
         if (!isInterior)
         {
             // In the cafe, internet isn't lost automatically. It depends on the phone.

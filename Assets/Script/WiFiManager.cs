@@ -42,7 +42,6 @@ public class WiFiManager : MonoBehaviour
 
     public bool isCompromised = false;
     private string _connectedNetwork = "";
-    private string _pendingNetwork = "";
     private string _savedNetwork = "";
     private string _cafePassword = "cafe1234";
 
@@ -226,7 +225,6 @@ public class WiFiManager : MonoBehaviour
             return;
         }
 
-        _pendingNetwork = "CafeReal";
         ShowPasswordPopup();
     }
 
@@ -275,7 +273,6 @@ public class WiFiManager : MonoBehaviour
     public void CancelPassword()
     {
         passwordPopup.SetActive(false);
-        _pendingNetwork = "";
     }
 
     public void DisconnectAll()
