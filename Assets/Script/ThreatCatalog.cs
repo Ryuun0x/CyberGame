@@ -36,6 +36,18 @@ public static class ThreatCatalog
 
         Add(new ThreatInfo
         {
+            Id = "login_alert",
+            Kind = ThreatKind.Threat,
+            Category = "Accounts",
+            Title = "Stolen password used to sign in",
+            RecoveredResult = "Someone tried to sign in with the school password the fake Wi-Fi stole. 2FA asked you first and you denied it, so they stayed out. Change that password now.",
+            CompromisedResult = "Someone signed in to your school account with the password the fake Wi-Fi stole: either you approved a sign-in you didn't start, or without 2FA nothing stopped them from changing your password.",
+            Lesson = "Never approve a sign-in request you didn't start: deny it, then change your password. 2FA only protects you if you say no to prompts you don't recognize.",
+            Source = "CISA, \"Implementing Number Matching in MFA Applications\" (2022): push-fatigue attacks"
+        });
+
+        Add(new ThreatInfo
+        {
             Id = "fake_update",
             Kind = ThreatKind.Threat,
             Category = "Malware",

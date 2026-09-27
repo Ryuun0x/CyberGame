@@ -149,7 +149,7 @@ public class CityMapController : MonoBehaviour
     bool CafeTaskActive()
     {
         var gp = GameProgressManager.Instance;
-        return !IsIndoor && gp != null && gp.thesisBackedUp && gp.is2FAEnabled && !gp.arrivedAtCafe;
+        return !IsIndoor && gp != null && gp.thesisBackedUp && !gp.arrivedAtCafe;
     }
 
     void CreatePhoneMap()

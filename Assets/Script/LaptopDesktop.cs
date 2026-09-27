@@ -307,7 +307,7 @@ public class LaptopDesktop : MonoBehaviour
         {
             NarrationManager.Instance.Show("Phew, thesis is backed up.", 3f);
             yield return new WaitForSecondsRealtime(3.5f);
-            NarrationManager.Instance.Show("I still need to turn on 2FA on my phone before heading out.", 4f);
+            NarrationManager.Instance.Show("I could turn on 2FA on my phone too, before heading out.", 4f);
         }
         else
         {

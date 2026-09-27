@@ -88,6 +88,8 @@ public static class CafeWifiChecks
             Check(Find("fake_update").outcome == ThreatOutcome.Compromised && gp.installedFakeUpdate, "Fake update Download is Compromised.");
             Check(ThreatCatalog.Get("fake_update")?.Category == "Malware", "fake_update is in the catalog.");
 
+            Check(ThreatCatalog.Get("login_alert")?.Category == "Accounts", "login_alert is in the catalog.");
+
             Debug.Log("[CafeWifiChecks] PASS: receipt, wrong/right password, Safe, Cancel → Recovered, Sign in → Compromised + stolen, override, leave café, toast, fake update.");
         }
         finally
@@ -97,7 +99,7 @@ public static class CafeWifiChecks
             UnityEngine.Object.DestroyImmediate(canvas);
             foreach (var r in UnityEngine.Object.FindObjectsByType<CafeReceipt>(FindObjectsSortMode.None)) UnityEngine.Object.DestroyImmediate(r.gameObject);
             if (ownGp) UnityEngine.Object.DestroyImmediate(gp.gameObject);
-            else { gp.credentialsStolen = false; gp.hasReceipt = false; gp.installedFakeUpdate = false; }
+            else { gp.credentialsStolen = false; gp.hasReceipt = false; gp.installedFakeUpdate = false; gp.accountHijacked = false; }
         }
     }
 }

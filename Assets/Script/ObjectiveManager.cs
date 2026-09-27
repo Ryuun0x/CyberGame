@@ -43,6 +43,7 @@ public class ObjectiveManager : MonoBehaviour
     public struct SubTask
     {
         [TextArea] public string description;
+        public bool optional; // doesn't hold up the objective (e.g. 2FA)
         [HideInInspector] public bool completed;
     }
 
@@ -160,8 +161,8 @@ public class ObjectiveManager : MonoBehaviour
         // If arrived at cafe -> show "Get Connected"
         if (gp.arrivedAtCafe) return 4;
 
-        // If 2FA is done → show "Time to Go"
-        if (gp.is2FAEnabled && gp.thesisBackedUp) return 3;
+        // Backed up → show "Time to Go" (2FA is optional)
+        if (gp.thesisBackedUp) return 3;
 
         // If flash drive picked up → show "Secure Your Work"
         if (gp.hasFlashDrive) return 2;
@@ -236,7 +237,7 @@ public class ObjectiveManager : MonoBehaviour
         bool allDone = true;
         for (int i = 0; i < objectives[objectiveIndex].subTasks.Length; i++)
         {
-            if (!objectives[objectiveIndex].subTasks[i].completed)
+            if (!objectives[objectiveIndex].subTasks[i].completed && !objectives[objectiveIndex].subTasks[i].optional)
             {
                 allDone = false;
                 break;

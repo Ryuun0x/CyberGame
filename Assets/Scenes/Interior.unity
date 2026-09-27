@@ -9616,6 +9616,8 @@ MonoBehaviour:
   connectedToCafeWiFi: 0
   hasReceipt: 0
   credentialsStolen: 0
+  installedFakeUpdate: 0
+  accountHijacked: 0
 --- !u!4 &1219817539
 Transform:
   m_ObjectHideFlags: 0
@@ -11730,7 +11732,7 @@ MonoBehaviour:
   requireTriedSubmit: 1
   requireHasFlashDrive: 1
   requireThesisBackedUp: 1
-  require2FAEnabled: 1
+  require2FAEnabled: 0
   blockedNarration: I can't do that right now.
   lockedPromptOverride: 
 --- !u!1001 &1421277883

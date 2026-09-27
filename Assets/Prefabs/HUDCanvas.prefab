@@ -538,20 +538,25 @@ MonoBehaviour:
   - title: Morning Routine
     subTasks:
     - description: Check your laptop and submit your thesis
+      optional: 0
       completed: 0
   - title: No Connection
     subTasks:
     - description: Find a flash drive to backup your thesis
+      optional: 0
       completed: 0
   - title: Secure Your Work
     subTasks:
     - description: Backup your thesis using the flash drive
+      optional: 0
       completed: 0
-    - description: Enable 2FA on your phone
+    - description: Enable 2FA on your phone (optional)
+      optional: 1
       completed: 0
   - title: Time to Go
     subTasks:
     - description: "Head to the caf\xE9"
+      optional: 0
       completed: 0
 --- !u!1 &4588506189820885453
 GameObject:
