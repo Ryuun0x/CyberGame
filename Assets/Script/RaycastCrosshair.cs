@@ -34,7 +34,7 @@ public class RaycastCrosshair : MonoBehaviour
         if (promptPanel != null)
         {
             promptPanel.gameObject.SetActive(false);
-            _promptCanvas = promptPanel.GetComponentInParent<Canvas>();
+            _promptCanvas = promptPanel.GetComponentInParent<Canvas>(true); // true: still found if the canvas starts hidden
         }
     }
 
@@ -104,7 +104,8 @@ public class RaycastCrosshair : MonoBehaviour
     void ShowPrompt(IInteractable interactable,
                     GatekeepRequirement gate, bool isLocked)
     {
-        if (promptPanel == null) return;
+        // A missing prompt must never stop E from working, so bail out instead of throwing.
+        if (promptPanel == null || _promptCanvas == null) return;
 
         MonoBehaviour targetMB = interactable as MonoBehaviour;
         if (targetMB == null) return;
