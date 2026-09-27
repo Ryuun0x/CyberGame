@@ -89,7 +89,7 @@ public class ObjectiveManager : MonoBehaviour
                 subTasks = new SubTask[]
                 {
                     new SubTask { description = "Backup your thesis using the flash drive." },
-                    new SubTask { description = "Enable 2FA on your phone." }
+                    new SubTask { description = "Enable 2FA on your phone (optional).", optional = true }
                 }
             },
             new Objective
@@ -106,6 +106,11 @@ public class ObjectiveManager : MonoBehaviour
             {
                 title = "Submit Thesis",
                 subTasks = new SubTask[] { new SubTask { description = "Open your laptop and finally submit your thesis." } }
+            },
+            new Objective
+            {
+                title = "Head Out",
+                subTasks = new SubTask[] { new SubTask { description = "Leave the café." } }
             }
         };
 
@@ -128,6 +133,7 @@ public class ObjectiveManager : MonoBehaviour
             GameProgressManager.Instance.On2FAEnabled          += Handle2FAEnabled;
             GameProgressManager.Instance.OnArrivedAtCafe       += HandleArrivedAtCafe;
             GameProgressManager.Instance.OnConnectedToCafeWiFi += HandleConnectedToCafeWiFi;
+            GameProgressManager.Instance.OnThesisSubmitted     += HandleThesisSubmitted;
         }
 
         // Determine which objective to show based on current progress
@@ -154,6 +160,9 @@ public class ObjectiveManager : MonoBehaviour
 
         var gp = GameProgressManager.Instance;
         Debug.Log($"[Objective] Flags → triedSubmit:{gp.triedSubmitWithoutInternet} hasFlash:{gp.hasFlashDrive} backedUp:{gp.thesisBackedUp} 2FA:{gp.is2FAEnabled} arrivedCafe:{gp.arrivedAtCafe} connectedCafe:{gp.connectedToCafeWiFi}");
+
+        // Submitted -> show "Head Out"
+        if (gp.thesisSubmitted) return 6;
 
         // If connected to cafe WiFi -> show "Submit Thesis"
         if (gp.connectedToCafeWiFi) return 5;
@@ -261,6 +270,7 @@ public class ObjectiveManager : MonoBehaviour
     private void Handle2FAEnabled() { CompleteSubTask(2, 1); }
     private void HandleArrivedAtCafe() { CompleteAndAdvance(3, 0); }
     private void HandleConnectedToCafeWiFi() { CompleteAndAdvance(4, 0); }
+    private void HandleThesisSubmitted() { CompleteAndAdvance(5, 0); }
 
     void OnDestroy()
     {
@@ -272,6 +282,7 @@ public class ObjectiveManager : MonoBehaviour
             GameProgressManager.Instance.On2FAEnabled          -= Handle2FAEnabled;
             GameProgressManager.Instance.OnArrivedAtCafe       -= HandleArrivedAtCafe;
             GameProgressManager.Instance.OnConnectedToCafeWiFi -= HandleConnectedToCafeWiFi;
+            GameProgressManager.Instance.OnThesisSubmitted     -= HandleThesisSubmitted;
         }
     }
 

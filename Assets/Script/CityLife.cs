@@ -63,7 +63,7 @@ public class CityLife : MonoBehaviour
         }
     }
 
-    GameObject Person(string name, Vector3 position, float yaw)
+    public GameObject Person(string name, Vector3 position, float yaw)
     {
         position.y = GroundY(position);
         var go = Instantiate(characters[UnityEngine.Random.Range(0, characters.Length)], position, Quaternion.Euler(0, yaw, 0), transform);

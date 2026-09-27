@@ -140,5 +140,9 @@ public class LaptopInteraction : MonoBehaviour, IInteractable
         Cursor.visible = false;
         _isUsingLaptop = false;
         _isAnimating = false;
+
+        // Standing up after the upload: the stranger at the next table packs up and leaves.
+        if (GameProgressManager.Instance != null && GameProgressManager.Instance.thesisSubmitted)
+            CafeStranger.LeaveIfPresent();
     }
 }

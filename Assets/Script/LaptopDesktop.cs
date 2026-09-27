@@ -37,6 +37,7 @@ public class LaptopDesktop : MonoBehaviour
     private FakeUpdateBanner _updateBanner;
 
     public string chapterTitle = "Chapter 1: The Deadline";
+    public string nextChapterTitle = "Chapter 2"; // title card shown after the debrief
 
     void Start()
     {
@@ -154,6 +155,7 @@ public class LaptopDesktop : MonoBehaviour
                 Debug.Log("Thesis submitted via " + _wifi.Network);
                 _chapterEnding = true;
                 if (_updateBanner != null) _updateBanner.Dismiss(); // ignored it: that's the safe choice
+                if (GameProgressManager.Instance != null) GameProgressManager.Instance.SubmitThesis(); // unlocks the café exit
                 StartCoroutine(PlayCafeSuccessNarration());
                 CloseThesis();
             }
@@ -328,12 +330,11 @@ public class LaptopDesktop : MonoBehaviour
         yield return new WaitForSecondsRealtime(3f);
         NarrationManager.Instance.Show("Perfect. The thesis is submitted securely.", 3.5f);
         yield return new WaitForSecondsRealtime(4f);
-        NarrationManager.Instance.Show("Looks like I'm finally done! Time to relax.", 4f);
-        yield return new WaitForSecondsRealtime(4.5f);
-        EndChapter();
+        NarrationManager.Instance.Show("Looks like I'm finally done! Time to head out.", 4f);
     }
 
-    void EndChapter()
+    // Called by CafeEnding once the player has walked out of the café.
+    public void EndChapter()
     {
         var gp = GameProgressManager.Instance;
         if (ThreatLog.Instance != null && gp != null)
@@ -341,7 +342,7 @@ public class LaptopDesktop : MonoBehaviour
             ThreatLog.Instance.Record("backup", gp.thesisBackedUp);
             ThreatLog.Instance.Record("mfa", gp.is2FAEnabled);
         }
-        DebriefScreen.Show(chapterTitle);
+        DebriefScreen.Show(chapterTitle, nextChapterTitle);
     }
 
     IEnumerator PlayCafeNoWifiNarration()

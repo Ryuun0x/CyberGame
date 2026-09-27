@@ -30,11 +30,16 @@ public class DebriefScreen : MonoBehaviour
 
     CanvasGroup _group;
 
-    public static void Show(string chapterTitle)
+    string _nextChapter;
+
+    // nextChapter: if set, a Continue button leads to that chapter's title card.
+    public static void Show(string chapterTitle, string nextChapter = null)
     {
         if (IsOpen) return;
         IsOpen = true;
-        new GameObject("DebriefScreen").AddComponent<DebriefScreen>().Build(chapterTitle);
+        var screen = new GameObject("DebriefScreen").AddComponent<DebriefScreen>();
+        screen._nextChapter = nextChapter;
+        screen.Build(chapterTitle);
     }
 
     void Build(string chapterTitle)
@@ -91,7 +96,9 @@ public class DebriefScreen : MonoBehaviour
         row.childForceExpandHeight = false;
         if (Application.CanStreamedLevelBeLoaded(MenuScene))
             UIBuild.MakeButton(buttons, "Main Menu", SecondaryButton, () => LoadFresh(MenuScene));
-        UIBuild.MakeButton(buttons, "Play Again", PrimaryButton, () => LoadFresh(RestartScene));
+        bool next = !string.IsNullOrEmpty(_nextChapter);
+        UIBuild.MakeButton(buttons, "Play Again", next ? SecondaryButton : PrimaryButton, () => LoadFresh(RestartScene));
+        if (next) UIBuild.MakeButton(buttons, "Continue", PrimaryButton, () => StartCoroutine(TitleCard()));
 
         StartCoroutine(FadeIn());
     }
@@ -139,6 +146,34 @@ public class DebriefScreen : MonoBehaviour
         }
         CafeZone.PlayerInCafe = false;
         SceneManager.LoadScene(sceneName);
+    }
+
+    // Next chapter's title card over the debrief. Nothing is built past it yet, so it ends at the menu.
+    IEnumerator TitleCard()
+    {
+        var card = UIBuild.Stretch(UIBuild.NewRect("TitleCard", transform));
+        card.gameObject.AddComponent<Image>().color = Color.black;
+        var group = card.gameObject.AddComponent<CanvasGroup>();
+        group.alpha = 0f;
+        UIBuild.Column(card, 0, 24).childAlignment = TextAnchor.MiddleCenter;
+        var title = UIBuild.Label(card, _nextChapter, 72, TextMain, FontStyles.Bold);
+        title.alignment = TextAlignmentOptions.Center;
+        var soon = UIBuild.Label(card, "To be continued", 26, TextDim, FontStyles.Italic);
+        soon.alignment = TextAlignmentOptions.Center;
+        for (float t = 0f; t < 1f; t += Time.unscaledDeltaTime / 1.2f)
+        {
+            group.alpha = t;
+            yield return null;
+        }
+        group.alpha = 1f;
+        yield return new WaitForSecondsRealtime(1.5f);
+        var buttons = UIBuild.NewRect("Buttons", card);
+        var row = buttons.gameObject.AddComponent<HorizontalLayoutGroup>();
+        row.childAlignment = TextAnchor.MiddleCenter;
+        row.childControlWidth = row.childControlHeight = true;
+        row.childForceExpandWidth = row.childForceExpandHeight = false;
+        UIBuild.MakeButton(buttons, Application.CanStreamedLevelBeLoaded(MenuScene) ? "Main Menu" : "Play Again", SecondaryButton,
+            () => LoadFresh(Application.CanStreamedLevelBeLoaded(MenuScene) ? MenuScene : RestartScene));
     }
 
     IEnumerator FadeIn()
