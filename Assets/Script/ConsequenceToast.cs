@@ -7,7 +7,7 @@ using UnityEngine.UI;
 // Show it after every meaningful choice (good or bad) so it never gives away which one was wrong.
 public class ConsequenceToast : MonoBehaviour
 {
-    const float ButterflySize = 58, TextHeight = 46, Gap = 12;
+    const float ButterflySize = 80, TextHeight = 64, Gap = 16;
     static ConsequenceToast _current;
 
     RectTransform _root, _butterfly;
@@ -23,7 +23,13 @@ public class ConsequenceToast : MonoBehaviour
     void Build()
     {
         UIBuild.Overlay(gameObject, 450);
-        GetComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize; // same scale as the HUD
+        // Same pixel scale as the HUD it sits in (the HUD canvas uses a fixed scale factor).
+        var scaler = GetComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+        var panel = ObjectiveManager.Instance != null ? ObjectiveManager.Instance.objectivePanel : null;
+        var hud = panel != null ? panel.GetComponentInParent<Canvas>(true) : null;
+        var hudScaler = hud != null ? hud.rootCanvas.GetComponent<CanvasScaler>() : null;
+        if (hudScaler != null) scaler.scaleFactor = hudScaler.scaleFactor;
         GetComponent<GraphicRaycaster>().enabled = false; // never blocks clicks
 
         _root = UIBuild.NewRect("Notice", transform);

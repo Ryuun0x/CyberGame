@@ -126,8 +126,9 @@ public class RaycastCrosshair : MonoBehaviour
             promptActionText.color = isLocked ? lockedPromptColor : Color.white;
         }
 
-        // Convert world position to screen position
-        Vector3 worldPos = targetMB.transform.position + offset;
+        // Anchor to the center of what the ray hit, not the pivot (a door's pivot is on its hinge)
+        Vector3 center = _hit.collider != null ? _hit.collider.bounds.center : targetMB.transform.position;
+        Vector3 worldPos = center + offset;
         Vector3 screenPos = _camera.WorldToScreenPoint(worldPos);
 
         // Only show if object is in front of camera
