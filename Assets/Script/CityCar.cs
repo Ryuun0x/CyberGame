@@ -83,7 +83,8 @@ public class CityCar : MonoBehaviour
             else { t = 1; speed = 0; }
         }
         Place();
-        foreach (var wheel in wheels) wheel.Rotate(speed / 0.32f * Mathf.Rad2Deg * Time.deltaTime, 0, 0, Space.Self);
+        // Spin about the car's right axis: the wheel meshes' own X axes don't all point the same way.
+        foreach (var wheel in wheels) wheel.Rotate(transform.right, speed / 0.32f * Mathf.Rad2Deg * Time.deltaTime, Space.World);
     }
 
     void Place()

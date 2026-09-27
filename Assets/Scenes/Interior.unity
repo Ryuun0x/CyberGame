@@ -1631,8 +1631,16 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6131906647513126812, guid: 25ef30186d1a4424db11841cd3562f9a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1987843594}
   m_SourcePrefab: {fileID: 100100000, guid: 25ef30186d1a4424db11841cd3562f9a, type: 3}
+--- !u!1 &234275992 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6131906647513126812, guid: 25ef30186d1a4424db11841cd3562f9a, type: 3}
+  m_PrefabInstance: {fileID: 234275991}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &245544891
 GameObject:
   m_ObjectHideFlags: 0
@@ -9606,6 +9614,8 @@ MonoBehaviour:
   triedSubmitWithoutInternet: 0
   arrivedAtCafe: 0
   connectedToCafeWiFi: 0
+  hasReceipt: 0
+  credentialsStolen: 0
 --- !u!4 &1219817539
 Transform:
   m_ObjectHideFlags: 0
@@ -16218,12 +16228,27 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 8074899511531021087, guid: 25ef30186d1a4424db11841cd3562f9a, type: 3}
   m_PrefabInstance: {fileID: 234275991}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 234275992}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 55919ac34a26952479f3fc91f777b2fa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1987843594
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 234275992}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28fb1c92a763f06448bb3f713d33e76e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerBody
+  character: {fileID: 2823020816748870406, guid: 93d1a5d897a032341bfc4c53534ab336, type: 3}
+  animator: {fileID: 9100000, guid: afb6b9b32b5fb1643be7b7fe1bfa32d0, type: 2}
+  offset: {x: 0, y: 0, z: 0}
 --- !u!1 &1991008827 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 867179257314457160, guid: 25ef30186d1a4424db11841cd3562f9a, type: 3}
@@ -17887,6 +17912,7 @@ MonoBehaviour:
   homeScreen: {fileID: 8943533480215372016}
   wifiScreen: {fileID: 7399241895525202983}
   authenticatorScreen: {fileID: 3071156835833767754}
+  mapController: {fileID: 0}
 --- !u!1 &542631356763254117
 GameObject:
   m_ObjectHideFlags: 0
