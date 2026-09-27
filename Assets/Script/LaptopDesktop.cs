@@ -34,6 +34,7 @@ public class LaptopDesktop : MonoBehaviour
     private bool _thesisOpen = false;
     private bool _chapterEnding = false;
     private LaptopWifi _wifi; // café only: the laptop picks its own network
+    private FakeUpdateBanner _updateBanner;
 
     public string chapterTitle = "Chapter 1: The Deadline";
 
@@ -70,6 +71,10 @@ public class LaptopDesktop : MonoBehaviour
         // Café: the 'No Internet' X follows the laptop's own connection
         if (_wifi != null && noInternetIcon != null)
             noInternetIcon.SetActive(!_wifi.HasInternet);
+
+        // Café: once online (any network) with the thesis open, the page pushes a fake update. Once only.
+        if (_thesisOpen && _wifi != null && _wifi.HasInternet && _updateBanner == null)
+            _updateBanner = gameObject.AddComponent<FakeUpdateBanner>();
     }
 
     // Called when WifiIcon is clicked
@@ -148,6 +153,7 @@ public class LaptopDesktop : MonoBehaviour
             {
                 Debug.Log("Thesis submitted via " + _wifi.Network);
                 _chapterEnding = true;
+                if (_updateBanner != null) _updateBanner.Dismiss(); // ignored it: that's the safe choice
                 StartCoroutine(PlayCafeSuccessNarration());
                 CloseThesis();
             }

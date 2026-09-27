@@ -22,7 +22,8 @@ public static class CafeWifiChecks
         var canvas = new GameObject("Laptop (check)", typeof(RectTransform), typeof(Canvas));
         try
         {
-            ThreatLog.Entry Evil() { foreach (var e in log.Entries) if (e.id == "evil_twin") return e; return default; }
+            ThreatLog.Entry Find(string id) { foreach (var e in log.Entries) if (e.id == id) return e; return default; }
+            ThreatLog.Entry Evil() => Find("evil_twin");
             LaptopWifi Fresh()
             {
                 log.ResetLog();
@@ -74,7 +75,20 @@ public static class CafeWifiChecks
             wifi.SendMessage("Update");
             Check(!wifi.HasInternet, "Leaving the café disconnects.");
 
-            Debug.Log("[CafeWifiChecks] PASS: receipt, wrong/right password, Safe, Cancel → Recovered, Sign in → Compromised + stolen, override, leave café, toast.");
+            // Fake browser update: X → Safe; Download → Compromised + flag, and a second click can't undo it.
+            log.ResetLog();
+            var banner = canvas.AddComponent<FakeUpdateBanner>();
+            banner.Dismiss();
+            Check(Find("fake_update").outcome == ThreatOutcome.Safe && log.HasRecord("fake_update") && !gp.installedFakeUpdate, "Fake update X is Safe.");
+            UnityEngine.Object.DestroyImmediate(banner);
+            log.ResetLog();
+            banner = canvas.AddComponent<FakeUpdateBanner>();
+            banner.Download();
+            banner.Dismiss();
+            Check(Find("fake_update").outcome == ThreatOutcome.Compromised && gp.installedFakeUpdate, "Fake update Download is Compromised.");
+            Check(ThreatCatalog.Get("fake_update")?.Category == "Malware", "fake_update is in the catalog.");
+
+            Debug.Log("[CafeWifiChecks] PASS: receipt, wrong/right password, Safe, Cancel → Recovered, Sign in → Compromised + stolen, override, leave café, toast, fake update.");
         }
         finally
         {
@@ -83,7 +97,7 @@ public static class CafeWifiChecks
             UnityEngine.Object.DestroyImmediate(canvas);
             foreach (var r in UnityEngine.Object.FindObjectsByType<CafeReceipt>(FindObjectsSortMode.None)) UnityEngine.Object.DestroyImmediate(r.gameObject);
             if (ownGp) UnityEngine.Object.DestroyImmediate(gp.gameObject);
-            else { gp.credentialsStolen = false; gp.hasReceipt = false; }
+            else { gp.credentialsStolen = false; gp.hasReceipt = false; gp.installedFakeUpdate = false; }
         }
     }
 }

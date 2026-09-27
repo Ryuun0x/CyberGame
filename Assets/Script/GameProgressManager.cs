@@ -21,6 +21,7 @@ public class GameProgressManager : MonoBehaviour
     public bool connectedToCafeWiFi = false;
     public bool hasReceipt = false;          // ordered at the café counter; receipt has the real Wi-Fi password
     public bool credentialsStolen = false;   // typed school login into the evil twin's sign-in page
+    public bool installedFakeUpdate = false; // clicked Download on the fake browser update; Chapter 2 locks the files
 
     // ── Events (other scripts subscribe to these) ──────────
     public event Action OnFlashDrivePickedUp;

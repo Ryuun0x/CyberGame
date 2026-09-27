@@ -36,6 +36,18 @@ public static class ThreatCatalog
 
         Add(new ThreatInfo
         {
+            Id = "fake_update",
+            Kind = ThreatKind.Threat,
+            Category = "Malware",
+            Title = "Fake browser update",
+            SafeResult = "A web page said your browser was out of date. You ignored it and nothing was installed.",
+            CompromisedResult = "You downloaded an \"update\" from a pop-up on a web page. Real updates don't arrive that way, and whatever you installed is now on your laptop.",
+            Lesson = "Only update software through your system's own updater or the developer's official site. Never download an update from a pop-up or banner on a web page.",
+            Source = "CISA, Secure Our World: \"Update Software\""
+        });
+
+        Add(new ThreatInfo
+        {
             Id = "backup",
             Kind = ThreatKind.Habit,
             Category = "Data",
