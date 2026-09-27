@@ -37,6 +37,9 @@ public class LaptopDesktop : MonoBehaviour
 
     private bool _hasInternet = true;
     private bool _thesisOpen = false;
+    private bool _chapterEnding = false;
+
+    public string chapterTitle = "Chapter 1: The Deadline";
 
     void Start()
     {
@@ -161,6 +164,8 @@ public class LaptopDesktop : MonoBehaviour
 
         if (!isInterior)
         {
+            if (_chapterEnding) return;
+
             // ── CAFE LOGIC: Check the phone's WiFi connection ──
             // We pass 'true' to find the WiFiManager even if the phone screen is currently closed/hidden
             WiFiManager wifiManager = FindFirstObjectByType<WiFiManager>(FindObjectsInactive.Include);
@@ -171,12 +176,16 @@ public class LaptopDesktop : MonoBehaviour
                 if (network == "CafeReal")
                 {
                     Debug.Log("Thesis submitted safely via CafeWifi67!");
+                    _chapterEnding = true;
+                    if (ThreatLog.Instance != null) ThreatLog.Instance.Record("evil_twin", true);
                     StartCoroutine(PlayCafeSuccessNarration());
                     CloseThesis();
                 }
                 else if (network == "Evil1" || network == "Evil2")
                 {
                     Debug.Log("Submitted via Evil Twin! Data stolen!");
+                    _chapterEnding = true;
+                    if (ThreatLog.Instance != null) ThreatLog.Instance.Record("evil_twin", false);
                     StartCoroutine(PlayCafeHackedNarration());
                     
                     if (compromisedPopup != null) compromisedPopup.SetActive(true);
@@ -368,7 +377,8 @@ public class LaptopDesktop : MonoBehaviour
         NarrationManager.Instance.Show("Perfect. The thesis is submitted securely.", 3.5f);
         yield return new WaitForSecondsRealtime(4f);
         NarrationManager.Instance.Show("Looks like I'm finally done! Time to relax.", 4f);
-        // TODO: Trigger Game Over / Win Screen here
+        yield return new WaitForSecondsRealtime(4.5f);
+        EndChapter();
     }
 
     IEnumerator PlayCafeHackedNarration()
@@ -379,7 +389,19 @@ public class LaptopDesktop : MonoBehaviour
         NarrationManager.Instance.Show("Wait... why is the connection unencrypted?", 3.5f);
         yield return new WaitForSecondsRealtime(4f);
         NarrationManager.Instance.Show("Oh no. Someone is intercepting my data!", 3.5f);
-        // TODO: Trigger Game Over / Lose Screen here
+        yield return new WaitForSecondsRealtime(5f);
+        EndChapter();
+    }
+
+    void EndChapter()
+    {
+        var gp = GameProgressManager.Instance;
+        if (ThreatLog.Instance != null && gp != null)
+        {
+            ThreatLog.Instance.Record("backup", gp.thesisBackedUp);
+            ThreatLog.Instance.Record("mfa", gp.is2FAEnabled);
+        }
+        DebriefScreen.Show(chapterTitle);
     }
 
     IEnumerator PlayCafeNoWifiNarration()

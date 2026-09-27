@@ -12,6 +12,7 @@ public class PhoneHomeScreen : MonoBehaviour
     public GameObject homeScreen;
     public GameObject wifiScreen;
     public GameObject authenticatorScreen;
+    [HideInInspector] public CityMapController mapController;
     // Add more screens here as you build them:
     // public GameObject messagesScreen;
     // public GameObject contactsScreen;
@@ -19,13 +20,19 @@ public class PhoneHomeScreen : MonoBehaviour
     // public GameObject browserScreen;
     // public GameObject mailScreen;
 
-    void Start()
+    void Awake()
     {
         // Make sure only home screen is visible on start
         GoHome();
     }
 
     // ── Open App Methods (wire to app icon buttons) ────────
+
+    public void OpenMap()
+    {
+        if (mapController == null) return;
+        mapController.Open();
+    }
 
     public void OpenWifi()
     {
@@ -61,6 +68,7 @@ public class PhoneHomeScreen : MonoBehaviour
 
     private void HideAll()
     {
+        if (mapController != null) mapController.Close();
         if (homeScreen != null) homeScreen.SetActive(false);
         if (wifiScreen != null) wifiScreen.SetActive(false);
         if (authenticatorScreen != null) authenticatorScreen.SetActive(false);
