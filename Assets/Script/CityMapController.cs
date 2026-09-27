@@ -25,7 +25,8 @@ public class CityMapController : MonoBehaviour
     CityMapLayout layout;
     TMP_Text[] placeLabels;
     RectTransform[] placePins;
-    TMP_Text indoorLabel;
+    RectTransform miniMarker, fullMarker; // objective marker on the café
+    Sprite circleSprite, pinSprite;
     CanvasGroup mapFade;
     Coroutine opening;
     public bool reduceMotion;
@@ -105,14 +106,50 @@ public class CityMapController : MonoBehaviour
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
         scaler.matchWidthOrHeight = 0.5f;
-        miniRoot = Panel("Minimap", hudRoot, new Vector2(226, 254), new Color(0.035f, 0.055f, 0.075f, 0.96f));
+        // Round minimap: a dark rim with the map clipped to a circle inside it.
+        circleSprite = UIBuild.Icon(256, (x, y) => x * x + y * y <= 1, Color.white);
+        pinSprite = UIBuild.Icon(64, IsPin, Color.white);
+        miniRoot = Panel("Minimap", hudRoot, new Vector2(226, 226), new Color(0.035f, 0.055f, 0.075f, 0.96f));
+        miniRoot.GetComponent<Image>().sprite = circleSprite;
         miniRoot.anchorMin = miniRoot.anchorMax = miniRoot.pivot = Vector2.zero;
-        miniImage = MapImage("Map", miniRoot, new Vector2(210, 210), new Vector2(0, 13));
+        var clip = Panel("Clip", miniRoot, new Vector2(210, 210), Color.white);
+        clip.GetComponent<Image>().sprite = circleSprite;
+        clip.gameObject.AddComponent<Mask>().showMaskGraphic = false;
+        miniImage = MapImage("Map", clip, new Vector2(210, 210), Vector2.zero);
         miniArrow = Arrow(miniImage.rectTransform, 25);
-        Label("North", miniImage.transform, "N", new Vector2(26, 25), new Vector2(0, 87), 17);
+        miniMarker = Marker(miniRoot, 28); // outside the clip so it can sit on the rim when the café is far away
         var click = miniRoot.gameObject.AddComponent<Button>();
         click.onClick.AddListener(phone.OpenMap);
-        indoorLabel = Label("Expand", miniRoot, "MAP  /  M", new Vector2(210, 27), new Vector2(0, -108), 15);
+    }
+
+    RectTransform Marker(Transform parent, float size)
+    {
+        var rect = Rect("CafeMarker", parent, new Vector2(size, size), Vector2.zero);
+        rect.pivot = new Vector2(0.5f, 0.05f); // the pin's tip marks the spot
+        var image = rect.gameObject.AddComponent<Image>();
+        image.sprite = pinSprite;
+        image.color = new Color(1f, 0.78f, 0.2f);
+        image.raycastTarget = false;
+        var outline = rect.gameObject.AddComponent<Outline>();
+        outline.effectColor = new Color(0.1f, 0.08f, 0.05f);
+        outline.effectDistance = new Vector2(1.5f, -1.5f);
+        rect.gameObject.SetActive(false);
+        return rect;
+    }
+
+    // Map pin: round head with a hole, tapering to a point at the bottom.
+    static bool IsPin(float x, float y)
+    {
+        float hx = x, hy = y - 0.3f, head = hx * hx + hy * hy;
+        bool tip = y < 0.3f && y > -0.95f && Mathf.Abs(x) < (y + 0.95f) * 0.52f;
+        return (head < 0.36f || tip) && head > 0.04f;
+    }
+
+    // The café marker guides the "head to the café" task and disappears once you're there.
+    bool CafeTaskActive()
+    {
+        var gp = GameProgressManager.Instance;
+        return !IsIndoor && gp != null && gp.thesisBackedUp && gp.is2FAEnabled && !gp.arrivedAtCafe;
     }
 
     void CreatePhoneMap()
@@ -124,6 +161,7 @@ public class CityMapController : MonoBehaviour
 
         fullImage.gameObject.AddComponent<CityMapGesture>().map = this;
         fullArrow = Arrow(viewport, 17);
+        fullMarker = Marker(viewport, 30);
         mapFade = expanded.gameObject.AddComponent<CanvasGroup>();
         placeLabels = new TMP_Text[layout.places.Length];
         placePins = new RectTransform[layout.places.Length];
@@ -284,7 +322,32 @@ public class CityMapController : MonoBehaviour
             placePins[i].anchoredPosition = point;
             placeLabels[i].rectTransform.anchoredPosition = point + new Vector2(0, -18);
         }
-        indoorLabel.text = IsIndoor ? "HOME  /  M" : "MAP  /  M";
+        UpdateMarkers(rect);
+    }
+
+    void UpdateMarkers(Rect fullRect)
+    {
+        bool active = CafeTaskActive();
+        Vector2 cafe = default;
+        foreach (var place in layout.places) if (place.name == "Café") cafe = place.position;
+        float pulse = 1 + 0.12f * Mathf.Sin(Time.unscaledTime * 4);
+
+        // Minimap: clamp to the rim so the pin always points toward the café.
+        miniMarker.gameObject.SetActive(active);
+        if (active)
+        {
+            miniMarker.anchoredPosition = Vector2.ClampMagnitude(miniImage.Project(cafe), 96);
+            miniMarker.localScale = Vector3.one * pulse;
+        }
+        Vector2 point = fullImage.Project(cafe);
+        bool onScreen = active && Inside(point, fullRect, 16, 16);
+        fullMarker.gameObject.SetActive(onScreen);
+        if (onScreen)
+        {
+            fullMarker.anchoredPosition = point + new Vector2(0, 6);
+            fullMarker.localScale = Vector3.one * pulse;
+            fullMarker.SetAsLastSibling();
+        }
     }
 
     static bool Inside(Vector2 point, Rect rect, float xMargin, float yMargin)
@@ -355,5 +418,7 @@ public class CityMapController : MonoBehaviour
         if (expanded != null) Destroy(expanded.gameObject);
         if (arrowSprite != null) Destroy(arrowSprite);
         if (arrowTexture != null) Destroy(arrowTexture);
+        foreach (var sprite in new[] { circleSprite, pinSprite })
+            if (sprite != null) { Destroy(sprite.texture); Destroy(sprite); }
     }
 }

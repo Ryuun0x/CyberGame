@@ -112,7 +112,7 @@ public static class UIBuild
         return field;
     }
 
-    // Tiny procedural icons for glyphs the default font lacks (butterfly, check mark).
+    // Tiny procedural icons for glyphs the default font lacks (check mark, map pin, circles).
     public static Sprite Icon(int size, Func<float, float, bool> inside, Color color)
     {
         var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
@@ -125,19 +125,8 @@ public static class UIBuild
         return Sprite.Create(texture, new Rect(0, 0, size, size), Vector2.one * 0.5f);
     }
 
-    public static bool Butterfly(float x, float y)
-    {
-        float ax = Mathf.Abs(x);
-        bool upper = Sq((ax - 0.45f) / 0.42f) + Sq((y - 0.25f) / 0.5f) < 1;
-        bool lower = Sq((ax - 0.33f) / 0.3f) + Sq((y + 0.4f) / 0.33f) < 1;
-        bool body = ax < 0.07f && Mathf.Abs(y) < 0.6f;
-        return upper || lower || body;
-    }
-
     public static bool Check(float x, float y) =>
         Segment(x, y, -0.7f, 0f, -0.2f, -0.5f) < 0.16f || Segment(x, y, -0.2f, -0.5f, 0.7f, 0.55f) < 0.16f;
-
-    static float Sq(float v) => v * v;
 
     static float Segment(float px, float py, float ax, float ay, float bx, float by)
     {
