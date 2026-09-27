@@ -43,7 +43,6 @@ public class WiFiManager : MonoBehaviour
     public bool isCompromised = false;
     private string _connectedNetwork = "";
     private string _savedNetwork = "";
-    private string _cafePassword = "cafe1234";
 
     // Track last known cafe zone state to avoid updating every frame unnecessarily
     private bool _lastCafeState = false;
@@ -196,7 +195,6 @@ public class WiFiManager : MonoBehaviour
         _connectedNetwork = "Evil1";
         _savedNetwork = "Evil1";
         isCompromised = true;
-        if (ThreatLog.Instance != null) ThreatLog.Instance.MarkExposed("evil_twin");
         if (checkEvil1 != null) checkEvil1.SetActive(true);
         if (wifiStatusIcon != null) wifiStatusIcon.SetActive(true);
         Debug.Log("COMPROMISED - Evil Twin 1");
@@ -208,7 +206,6 @@ public class WiFiManager : MonoBehaviour
         _connectedNetwork = "Evil2";
         _savedNetwork = "Evil2";
         isCompromised = true;
-        if (ThreatLog.Instance != null) ThreatLog.Instance.MarkExposed("evil_twin");
         if (checkEvil2 != null) checkEvil2.SetActive(true);
         if (wifiStatusIcon != null) wifiStatusIcon.SetActive(true);
         Debug.Log("COMPROMISED - Evil Twin 2");
@@ -243,7 +240,7 @@ public class WiFiManager : MonoBehaviour
 
     public void SubmitPassword()
     {
-        if (passwordInput.text == _cafePassword)
+        if (passwordInput.text == CafeCounter.WifiPassword)
         {
             passwordPopup.SetActive(false);
             DisconnectAll();

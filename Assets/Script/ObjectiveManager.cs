@@ -99,7 +99,7 @@ public class ObjectiveManager : MonoBehaviour
             new Objective
             {
                 title = "Get Connected",
-                subTasks = new SubTask[] { new SubTask { description = "Check your phone's Wi-Fi. Identify and connect to the real café network (avoid the fake ones!)." } }
+                subTasks = new SubTask[] { new SubTask { description = "Get your laptop on the café Wi-Fi. The staff at the counter can help." } }
             },
             new Objective
             {

@@ -19,6 +19,8 @@ public class GameProgressManager : MonoBehaviour
     public bool triedSubmitWithoutInternet = false;
     public bool arrivedAtCafe = false;
     public bool connectedToCafeWiFi = false;
+    public bool hasReceipt = false;          // ordered at the café counter; receipt has the real Wi-Fi password
+    public bool credentialsStolen = false;   // typed school login into the evil twin's sign-in page
 
     // ── Events (other scripts subscribe to these) ──────────
     public event Action OnFlashDrivePickedUp;
@@ -92,12 +94,20 @@ public class GameProgressManager : MonoBehaviour
         OnArrivedAtCafe?.Invoke();
     }
 
+    public void OrderDrink()
+    {
+        if (hasReceipt) return;
+
+        hasReceipt = true;
+        Debug.Log("[GameProgress] Ordered a drink; got the Wi-Fi receipt.");
+    }
+
     public void ConnectToCafeWiFi()
     {
         if (connectedToCafeWiFi) return; // already tracked
         
         connectedToCafeWiFi = true;
-        Debug.Log("[GameProgress] Connected to the real cafe WiFi!");
+        Debug.Log("[GameProgress] Connected to cafe WiFi.");
         OnConnectedToCafeWiFi?.Invoke();
     }
 }

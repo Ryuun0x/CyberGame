@@ -42,21 +42,14 @@ public class DebriefScreen : MonoBehaviour
         FreezeGameplay();
         EnsureEventSystem();
 
-        var canvas = gameObject.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 500;
-        var scaler = gameObject.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920, 1080);
-        scaler.matchWidthOrHeight = 0.5f;
-        gameObject.AddComponent<GraphicRaycaster>();
+        UIBuild.Overlay(gameObject, 500);
         _group = gameObject.AddComponent<CanvasGroup>();
         _group.alpha = 0f;
 
-        var backdrop = Stretch(NewRect("Backdrop", transform));
+        var backdrop = UIBuild.Stretch(UIBuild.NewRect("Backdrop", transform));
         backdrop.gameObject.AddComponent<Image>().color = BackdropColor;
 
-        var panel = NewRect("Panel", transform);
+        var panel = UIBuild.NewRect("Panel", transform);
         panel.anchorMin = panel.anchorMax = new Vector2(0.5f, 0.5f);
         panel.sizeDelta = new Vector2(1180, 920);
         panel.gameObject.AddComponent<Image>().color = PanelColor;
@@ -73,13 +66,13 @@ public class DebriefScreen : MonoBehaviour
         int score = log != null ? log.ScorePercent() : 100;
         Color scoreColor = score >= 90 ? SafeColor : score >= 60 ? RecoveredColor : CompromisedColor;
 
-        var eyebrow = Label(panel, "CHAPTER COMPLETE", 20, TextDim, FontStyles.Bold);
+        var eyebrow = UIBuild.Label(panel, "CHAPTER COMPLETE", 20, TextDim, FontStyles.Bold);
         eyebrow.characterSpacing = 8;
-        Label(panel, chapterTitle, 46, TextMain, FontStyles.Bold);
-        Label(panel, compromised
-            ? "Your thesis was submitted, but an attacker got a copy of it."
+        UIBuild.Label(panel, chapterTitle, 46, TextMain, FontStyles.Bold);
+        UIBuild.Label(panel, compromised
+            ? "Your thesis was submitted, but an attacker stole your school login."
             : "Your thesis was submitted safely.", 24, TextMain, FontStyles.Normal);
-        Label(panel, $"Security score  <b>{score}%</b>   ·   {ThreatLog.RatingFor(score)}", 28, scoreColor, FontStyles.Normal);
+        UIBuild.Label(panel, $"Security score  <b>{score}%</b>   ·   {ThreatLog.RatingFor(score)}", 28, scoreColor, FontStyles.Normal);
 
         var content = ScrollArea(panel);
         if (log != null)
@@ -88,7 +81,7 @@ public class DebriefScreen : MonoBehaviour
             AddSection(content, log, ThreatKind.Habit, "HABITS THAT PROTECTED YOU");
         }
 
-        var buttons = NewRect("Buttons", panel);
+        var buttons = UIBuild.NewRect("Buttons", panel);
         var row = buttons.gameObject.AddComponent<HorizontalLayoutGroup>();
         row.spacing = 16;
         row.childAlignment = TextAnchor.MiddleRight;
@@ -97,8 +90,8 @@ public class DebriefScreen : MonoBehaviour
         row.childForceExpandWidth = false;
         row.childForceExpandHeight = false;
         if (Application.CanStreamedLevelBeLoaded(MenuScene))
-            MakeButton(buttons, "Main Menu", SecondaryButton, () => LoadFresh(MenuScene));
-        MakeButton(buttons, "Play Again", PrimaryButton, () => LoadFresh(RestartScene));
+            UIBuild.MakeButton(buttons, "Main Menu", SecondaryButton, () => LoadFresh(MenuScene));
+        UIBuild.MakeButton(buttons, "Play Again", PrimaryButton, () => LoadFresh(RestartScene));
 
         StartCoroutine(FadeIn());
     }
@@ -169,7 +162,7 @@ public class DebriefScreen : MonoBehaviour
             if (info == null || info.Kind != kind) continue;
             if (!any)
             {
-                var h = Label(content, heading, 18, TextDim, FontStyles.Bold);
+                var h = UIBuild.Label(content, heading, 18, TextDim, FontStyles.Bold);
                 h.characterSpacing = 6;
                 h.margin = new Vector4(0, 10, 0, 0);
                 any = true;
@@ -190,7 +183,7 @@ public class DebriefScreen : MonoBehaviour
             : outcome == ThreatOutcome.Recovered ? info.RecoveredResult ?? info.SafeResult
             : info.CompromisedResult;
 
-        var card = NewRect("Card", parent);
+        var card = UIBuild.NewRect("Card", parent);
         card.gameObject.AddComponent<Image>().color = CardColor;
         var cardRow = card.gameObject.AddComponent<HorizontalLayoutGroup>();
         cardRow.childControlWidth = true;
@@ -198,11 +191,11 @@ public class DebriefScreen : MonoBehaviour
         cardRow.childForceExpandWidth = false;
         cardRow.childForceExpandHeight = true;
 
-        var stripe = NewRect("Accent", card);
+        var stripe = UIBuild.NewRect("Accent", card);
         stripe.gameObject.AddComponent<Image>().color = accent;
         stripe.gameObject.AddComponent<LayoutElement>().preferredWidth = 6;
 
-        var body = NewRect("Body", card);
+        var body = UIBuild.NewRect("Body", card);
         body.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1;
         var bodyLayout = body.gameObject.AddComponent<VerticalLayoutGroup>();
         bodyLayout.padding = new RectOffset(24, 24, 18, 18);
@@ -212,36 +205,36 @@ public class DebriefScreen : MonoBehaviour
         bodyLayout.childForceExpandWidth = true;
         bodyLayout.childForceExpandHeight = false;
 
-        var header = NewRect("Header", body);
+        var header = UIBuild.NewRect("Header", body);
         var headerRow = header.gameObject.AddComponent<HorizontalLayoutGroup>();
         headerRow.childControlWidth = true;
         headerRow.childControlHeight = true;
         headerRow.childForceExpandWidth = false;
         headerRow.childForceExpandHeight = false;
-        var title = Label(header, $"{info.Title}  <color=#8A93A3><size=70%>{info.Category.ToUpperInvariant()}</size></color>", 26, TextMain, FontStyles.Bold);
+        var title = UIBuild.Label(header, $"{info.Title}  <color=#8A93A3><size=70%>{info.Category.ToUpperInvariant()}</size></color>", 26, TextMain, FontStyles.Bold);
         title.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1;
-        var badgeLabel = Label(header, badge, 18, accent, FontStyles.Bold);
+        var badgeLabel = UIBuild.Label(header, badge, 18, accent, FontStyles.Bold);
         badgeLabel.alignment = TextAlignmentOptions.Right;
         badgeLabel.characterSpacing = 4;
 
-        Label(body, result, 21, TextMain, FontStyles.Normal);
-        Label(body, $"<b>What to do:</b> {info.Lesson}", 20, TextDim, FontStyles.Normal);
-        Label(body, info.Source, 15, TextDim, FontStyles.Italic);
+        UIBuild.Label(body, result, 21, TextMain, FontStyles.Normal);
+        UIBuild.Label(body, $"<b>What to do:</b> {info.Lesson}", 20, TextDim, FontStyles.Normal);
+        UIBuild.Label(body, info.Source, 15, TextDim, FontStyles.Italic);
     }
 
     static RectTransform ScrollArea(RectTransform parent)
     {
-        var area = NewRect("Scroll", parent);
+        var area = UIBuild.NewRect("Scroll", parent);
         area.gameObject.AddComponent<LayoutElement>().flexibleHeight = 1;
         var scroll = area.gameObject.AddComponent<ScrollRect>();
         scroll.horizontal = false;
         scroll.movementType = ScrollRect.MovementType.Clamped;
         scroll.scrollSensitivity = 30f;
 
-        var viewport = Stretch(NewRect("Viewport", area));
+        var viewport = UIBuild.Stretch(UIBuild.NewRect("Viewport", area));
         viewport.gameObject.AddComponent<RectMask2D>();
 
-        var content = NewRect("Content", viewport);
+        var content = UIBuild.NewRect("Content", viewport);
         content.anchorMin = new Vector2(0, 1);
         content.anchorMax = new Vector2(1, 1);
         content.pivot = new Vector2(0.5f, 1);
@@ -257,49 +250,5 @@ public class DebriefScreen : MonoBehaviour
         scroll.viewport = viewport;
         scroll.content = content;
         return content;
-    }
-
-    static void MakeButton(RectTransform parent, string text, Color color, UnityAction onClick)
-    {
-        var rect = NewRect(text, parent);
-        var image = rect.gameObject.AddComponent<Image>();
-        image.color = color;
-        var button = rect.gameObject.AddComponent<Button>();
-        button.targetGraphic = image;
-        button.onClick.AddListener(onClick);
-        var le = rect.gameObject.AddComponent<LayoutElement>();
-        le.preferredWidth = 240;
-        le.preferredHeight = 64;
-        var label = Label(rect, text, 24, Color.white, FontStyles.Bold);
-        label.alignment = TextAlignmentOptions.Center;
-        Stretch(label.rectTransform);
-    }
-
-    static TextMeshProUGUI Label(RectTransform parent, string text, float size, Color color, FontStyles style)
-    {
-        var tmp = NewRect("Text", parent).gameObject.AddComponent<TextMeshProUGUI>();
-        tmp.text = text;
-        tmp.fontSize = size;
-        tmp.color = color;
-        tmp.fontStyle = style;
-        tmp.textWrappingMode = TextWrappingModes.Normal;
-        tmp.raycastTarget = false;
-        return tmp;
-    }
-
-    static RectTransform NewRect(string name, Transform parent)
-    {
-        var go = new GameObject(name, typeof(RectTransform));
-        go.transform.SetParent(parent, false);
-        return (RectTransform)go.transform;
-    }
-
-    static RectTransform Stretch(RectTransform rect)
-    {
-        rect.anchorMin = Vector2.zero;
-        rect.anchorMax = Vector2.one;
-        rect.offsetMin = Vector2.zero;
-        rect.offsetMax = Vector2.zero;
-        return rect;
     }
 }

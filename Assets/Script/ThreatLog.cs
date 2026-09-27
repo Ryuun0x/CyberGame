@@ -33,7 +33,17 @@ public class ThreatLog : MonoBehaviour
 
     public void Record(string id, bool safe)
     {
-        if (HasRecord(id)) return;
+        int existing = _entries.FindIndex(e => e.id == id);
+        if (existing >= 0)
+        {
+            // A later unsafe choice still counts (e.g. backing out once, then signing in on another fake network).
+            if (!safe && _entries[existing].outcome != ThreatOutcome.Compromised)
+            {
+                _entries[existing] = new Entry { id = id, outcome = ThreatOutcome.Compromised };
+                Debug.Log($"[ThreatLog] {id} → {ThreatOutcome.Compromised}");
+            }
+            return;
+        }
 
         ThreatOutcome outcome = !safe ? ThreatOutcome.Compromised
             : _exposed.Contains(id) ? ThreatOutcome.Recovered

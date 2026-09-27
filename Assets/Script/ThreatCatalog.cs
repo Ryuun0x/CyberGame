@@ -27,10 +27,10 @@ public static class ThreatCatalog
             Kind = ThreatKind.Threat,
             Category = "Network",
             Title = "Fake café Wi-Fi (evil twin)",
-            SafeResult = "You picked the café's real, password-protected network. Your thesis was uploaded privately.",
-            RecoveredResult = "You joined a lookalike network first, but switched to the real one before sending your thesis.",
-            CompromisedResult = "You sent your thesis over a lookalike network run by an attacker, who could read everything you uploaded.",
-            Lesson = "Ask staff or check a posted sign for the exact network name. Treat lookalike or open \"free\" networks as suspicious, and only log in on HTTPS sites.",
+            SafeResult = "You got the password from your café receipt and joined the real, password-protected network. Your school login never left your laptop.",
+            RecoveredResult = "You opened a lookalike network's sign-in page, but backed out without typing your school login.",
+            CompromisedResult = "You typed your school email and password into a fake Wi-Fi sign-in page. The attacker running that network now has your school login.",
+            Lesson = "Get the exact network name and password from staff or your receipt. Treat open lookalike \"free\" networks as suspicious, and never type your school or email password into a Wi-Fi sign-in page.",
             Source = "Protections: FTC, \"Are Public Wi-Fi Networks Safe? What You Need To Know\" (2023)"
         });
 
