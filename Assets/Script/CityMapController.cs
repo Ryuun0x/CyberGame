@@ -199,7 +199,7 @@ public class CityMapController : MonoBehaviour
             // Keep the original phone visible while its frame turns.
         }
         IsExpanded = true;
-        range = Mathf.Clamp(32f, minimumRange, maximumRange);
+        range = Mathf.Clamp(32f, minimumRange, MaxRange());
         pan = Vector2.zero;
         expanded.gameObject.SetActive(true);
         mapFade.alpha = 0;
@@ -251,7 +251,7 @@ public class CityMapController : MonoBehaviour
     public void Zoom(float multiplier)
     {
         if (!IsExpanded || multiplier <= 0 || float.IsNaN(multiplier)) return;
-        range = Mathf.Clamp(range * multiplier, minimumRange, maximumRange);
+        range = Mathf.Clamp(range * multiplier, minimumRange, MaxRange());
     }
 
     public void Pan(Vector2 delta)
@@ -302,9 +302,10 @@ public class CityMapController : MonoBehaviour
         if (player == null) return;
         Vector2 position = MapPosition;
         miniImage.SetView(position, minimapRange);
-        Vector2 center = position + pan;
-        center.x = Mathf.Clamp(center.x, layout.min.x, layout.max.x);
-        center.y = Mathf.Clamp(center.y, layout.min.y, layout.max.y);
+        // Keep the whole view on the artwork, not just its centre, so no blank space shows past the border.
+        Vector2 center = position + pan, half = HalfView();
+        center.x = ClampInside(center.x, layout.min.x + half.x, layout.max.x - half.x);
+        center.y = ClampInside(center.y, layout.min.y + half.y, layout.max.y - half.y);
         pan = center - position;
         fullImage.SetView(center, range);
         miniArrow.localRotation = Quaternion.Euler(0, 0, IsIndoor ? 0 : -player.eulerAngles.y);
@@ -324,6 +325,24 @@ public class CityMapController : MonoBehaviour
         }
         UpdateMarkers(rect);
     }
+
+    // range is the half-height of the view in metres; the viewport is wider than tall.
+    Vector2 HalfView()
+    {
+        var rect = viewport.rect;
+        return new Vector2(range * (rect.height > 0 ? rect.width / rect.height : 1), range);
+    }
+
+    // Widest zoom that still fits inside the city artwork.
+    float MaxRange()
+    {
+        var rect = viewport.rect;
+        float aspect = rect.height > 0 ? rect.width / rect.height : 1;
+        Vector2 size = layout.max - layout.min;
+        return Mathf.Max(minimumRange, Mathf.Min(maximumRange, size.y / 2, size.x / 2 / aspect));
+    }
+
+    static float ClampInside(float value, float low, float high) => low <= high ? Mathf.Clamp(value, low, high) : (low + high) / 2;
 
     void UpdateMarkers(Rect fullRect)
     {

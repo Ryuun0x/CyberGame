@@ -3,14 +3,16 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// The stranger at the table next to the player's laptop. After the upload, when the player stands up,
-// their screen flashes the Ghostline logo, the lid closes and they walk out of the café.
-// Their laptop is a stripped copy of the café laptop; the logo is drawn in code (no art asset yet).
+// The stranger at the table next to the player's laptop (a seated NPC placed in the city scene, with SeatedPose).
+// After the upload, when the player stands up, their screen flashes the Ghostline logo, the lid closes,
+// they get up and walk out of the café. Their laptop is a stripped copy of the café laptop, made at runtime;
+// the logo is drawn in code (no art asset yet).
 public class CafeStranger : MonoBehaviour
 {
-    // Next table over (Table_08 (2)); the screen faces the player's seat so the logo can be glimpsed.
-    static readonly Vector3 LaptopSpot = new Vector3(-3.98f, 0.939f, 79.95f);
-    static readonly Vector3 StandSpot = new Vector3(-3.35f, 0f, 80.45f);
+    // On their table (Table_08 (2)), turned half towards the player's seat (screen facing north-east)
+    // so the logo can be glimpsed from there.
+    static readonly Vector3 LaptopSpot = new Vector3(-3.8f, 0.939f, 79.93f);
+    const float LaptopYaw = 135; // café laptop model: yaw 180 faces +X, 90 faces +Z
     // Around the counter and out through the café door.
     static readonly Vector3[] ExitPath =
     {
@@ -23,17 +25,17 @@ public class CafeStranger : MonoBehaviour
     Transform laptop, hinge;
     GameObject screen;
     Animator anim;
+    SeatedPose seated;
     bool leaving;
 
-    public static void Spawn(CityLife city)
+    void Awake() => _current = this;
+
+    void Start()
     {
+        anim = GetComponentInChildren<Animator>();
+        seated = GetComponent<SeatedPose>();
         var cafeLaptop = FindFirstObjectByType<LaptopInteraction>();
-        if (city == null || city.characters == null || city.characters.Length == 0 || cafeLaptop == null) return;
-        var person = city.Person("Stranger", StandSpot, 0);
-        person.transform.rotation = Quaternion.LookRotation(Flat(LaptopSpot - person.transform.position));
-        _current = person.AddComponent<CafeStranger>();
-        _current.anim = person.GetComponentInChildren<Animator>();
-        _current.BuildLaptop(cafeLaptop.transform);
+        if (cafeLaptop != null) BuildLaptop(cafeLaptop.transform);
     }
 
     public static void LeaveIfPresent()
@@ -45,8 +47,7 @@ public class CafeStranger : MonoBehaviour
 
     void BuildLaptop(Transform cafeLaptop)
     {
-        // Same model, no interaction: the café laptop's screen faces +X at yaw 180, so yaw 90 faces +Z.
-        laptop = Instantiate(cafeLaptop.gameObject, LaptopSpot, Quaternion.Euler(0, 90, 0)).transform;
+        laptop = Instantiate(cafeLaptop.gameObject, LaptopSpot, Quaternion.Euler(0, LaptopYaw, 0)).transform; // same model, no interaction
         laptop.name = "StrangerLaptop";
         foreach (var mb in laptop.GetComponentsInChildren<MonoBehaviour>()) DestroyImmediate(mb); // before LaptopInteraction.Start can touch the café canvas
         var viewPoint = laptop.Find("LaptopViewPoint");
@@ -116,7 +117,9 @@ public class CafeStranger : MonoBehaviour
         if (screen != null) screen.SetActive(false);
         yield return new WaitForSeconds(0.6f);
 
-        Destroy(laptop.gameObject); // takes it with them
+        if (laptop != null) Destroy(laptop.gameObject); // takes it with them
+        if (seated != null) seated.Stand();
+        yield return null;
         anim.SetFloat("Speed", 0.5f); // blend tree: 0.5 = walk
         foreach (var point in ExitPath)
             while (Vector2.Distance(Flat2(transform.position), Flat2(point)) > 0.05f)

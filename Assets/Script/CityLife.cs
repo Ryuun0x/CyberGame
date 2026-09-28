@@ -16,7 +16,8 @@ public class CityLife : MonoBehaviour
     public float suburbEdge = -90;
     public Vector2 suburbRows = new Vector2(-18, 54);
     public float laneOffset = 1.6f;
-    public float sidewalkOffset = 5.3f;
+    [Tooltip("Sidewalk centre line from the road centre. Measured: curb at 3.0 m, buildings from ~5.8 m.")]
+    public float sidewalkOffset = 4.4f;
 
     [Header("People")]
     public GameObject[] characters;

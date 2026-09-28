@@ -4,7 +4,6 @@ using UnityEngine;
 
 // Chapter 1 wrap-up at the café (added by CafeZone):
 // - an invisible wall in the doorway keeps the player inside until the thesis is submitted;
-// - spawns the stranger at the next table (CafeStranger);
 // - walking out after submitting: a scam text from Kai's hijacked account, narration, fade, debrief.
 public class CafeEnding : MonoBehaviour
 {
@@ -18,7 +17,6 @@ public class CafeEnding : MonoBehaviour
 
     void Start()
     {
-        CafeStranger.Spawn(FindFirstObjectByType<CityLife>());
         player = FindFirstObjectByType<CharacterController>();
         var door = FindFirstObjectByType<CafeDoor>();
         var zone = GetComponentInChildren<Collider>();
