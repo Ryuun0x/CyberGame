@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
+using TMPro;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
@@ -6,76 +8,101 @@ using UnityEngine.InputSystem;
 public class PhoneManager : MonoBehaviour
 {
     public GameObject phoneCanvas;
-    private bool _isPhoneOpen = false;
-
-    // Add this reference
     public MonoBehaviour firstPersonController;
-
     [Header("Gatekeep")]
-    [Tooltip("Require flash drive before allowing phone access")]
     public bool requireFlashDrive = true;
-
     [TextArea]
-    [Tooltip("Narration shown when player tries to open phone before it's allowed")]
     public string blockedNarration = "I don't need my phone right now. Let me focus on my thesis.";
+    public bool IsOpen { get; private set; }
+    public CityMapController Map { get; private set; }
+    float previousTimeScale;
+    CursorLockMode previousCursorLock;
+    bool previousCursorVisible, previousControllerEnabled;
+    RaycastCrosshair interaction;
+    bool previousInteractionEnabled;
+
+    void Start()
+    {
+        if (phoneCanvas == null) return;
+        phoneCanvas.SetActive(false);
+        interaction = GetComponentInChildren<RaycastCrosshair>(true);
+        Map = GetComponent<CityMapController>();
+        if (Map == null) Map = gameObject.AddComponent<CityMapController>();
+        Map.Initialize(this);
+    }
 
     void Update()
     {
 #if ENABLE_INPUT_SYSTEM
-        if (Keyboard.current.tabKey.wasPressedThisFrame)
+        if (Keyboard.current == null) return;
+        bool tab = Keyboard.current.tabKey.wasPressedThisFrame;
+        bool mapKey = Keyboard.current.mKey.wasPressedThisFrame;
+        bool back = Keyboard.current.escapeKey.wasPressedThisFrame;
 #else
-        if (Input.GetKeyDown(KeyCode.Tab))
+        bool tab = Input.GetKeyDown(KeyCode.Tab);
+        bool mapKey = Input.GetKeyDown(KeyCode.M);
+        bool back = Input.GetKeyDown(KeyCode.Escape);
 #endif
+        if (tab) { TogglePhone(); return; }
+        var selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+        bool typing = selected != null && selected.GetComponent<TMP_InputField>() != null;
+        if (mapKey && !typing)
         {
-            // If phone is already open, always allow closing
-            if (_isPhoneOpen)
-            {
-                TogglePhone();
-                return;
-            }
-
-            // ── Gatekeep Check ──────────────────────────────
-            if (requireFlashDrive && !IsPhoneAllowed())
-            {
-                if (NarrationManager.Instance != null)
-                    NarrationManager.Instance.Show(blockedNarration);
-                return;
-            }
-
-            TogglePhone();
+            if (Map != null && Map.IsExpanded) ClosePhone();
+            else OpenMap();
         }
+        else if (back && IsOpen) ClosePhone();
     }
 
-    /// <summary>
-    /// Phone is allowed once the player has the flash drive (entering "Secure Your Work" phase).
-    /// This means the player has already checked the laptop and found the flash drive.
-    /// </summary>
-    bool IsPhoneAllowed()
+    public void TogglePhone()
     {
-        if (GameProgressManager.Instance == null) return false;
-        return GameProgressManager.Instance.hasFlashDrive;
+        if (IsOpen) ClosePhone();
+        else TryOpenPhone();
     }
 
-    void TogglePhone()
+    public bool TryOpenPhone()
     {
-        _isPhoneOpen = !_isPhoneOpen;
-        phoneCanvas.SetActive(_isPhoneOpen);
-
-        if (_isPhoneOpen)
+        if (IsOpen) return true;
+        if (phoneCanvas == null || Time.timeScale == 0 || (firstPersonController != null && !firstPersonController.enabled)) return false;
+        if (requireFlashDrive && (GameProgressManager.Instance == null || !GameProgressManager.Instance.hasFlashDrive))
         {
-            Time.timeScale = 0f;
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-            // Disable camera/player control
-            firstPersonController.enabled = false;
+            if (NarrationManager.Instance != null) NarrationManager.Instance.Show(blockedNarration);
+            return false;
         }
-        else
-        {
-            Time.timeScale = 1f;
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-            // Re-enable camera/player control
-            firstPersonController.enabled = true;
-        }
+        previousTimeScale = Time.timeScale;
+        previousCursorLock = Cursor.lockState;
+        previousCursorVisible = Cursor.visible;
+        previousControllerEnabled = firstPersonController != null && firstPersonController.enabled;
+        previousInteractionEnabled = interaction != null && interaction.enabled;
+        IsOpen = true;
+        phoneCanvas.SetActive(true);
+        Time.timeScale = 0;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+        if (firstPersonController != null) firstPersonController.enabled = false;
+        if (interaction != null) interaction.enabled = false;
+        return true;
     }
+
+    public void OpenMap()
+    {
+        if (Map == null || Map.IsIndoor || !TryOpenPhone()) return;
+        phoneCanvas.GetComponentInChildren<PhoneHomeScreen>(true)?.OpenMap();
+    }
+
+    public void ClosePhone()
+    {
+        if (!IsOpen) return;
+        if (Map != null && Map.IsExpanded)
+            phoneCanvas.GetComponentInChildren<PhoneHomeScreen>(true)?.GoHome();
+        IsOpen = false;
+        if (phoneCanvas != null) phoneCanvas.SetActive(false);
+        Time.timeScale = previousTimeScale;
+        Cursor.lockState = previousCursorLock;
+        Cursor.visible = previousCursorVisible;
+        if (firstPersonController != null) firstPersonController.enabled = previousControllerEnabled;
+        if (interaction != null) interaction.enabled = previousInteractionEnabled;
+    }
+
+    void OnDisable() => ClosePhone();
 }

@@ -43,6 +43,7 @@ public class ObjectiveManager : MonoBehaviour
     public struct SubTask
     {
         [TextArea] public string description;
+        public bool optional; // doesn't hold up the objective (e.g. 2FA)
         [HideInInspector] public bool completed;
     }
 
@@ -88,7 +89,7 @@ public class ObjectiveManager : MonoBehaviour
                 subTasks = new SubTask[]
                 {
                     new SubTask { description = "Backup your thesis using the flash drive." },
-                    new SubTask { description = "Enable 2FA on your phone." }
+                    new SubTask { description = "Enable 2FA on your phone (optional).", optional = true }
                 }
             },
             new Objective
@@ -99,12 +100,17 @@ public class ObjectiveManager : MonoBehaviour
             new Objective
             {
                 title = "Get Connected",
-                subTasks = new SubTask[] { new SubTask { description = "Check your phone's Wi-Fi. Identify and connect to the real café network (avoid the fake ones!)." } }
+                subTasks = new SubTask[] { new SubTask { description = "Get your laptop on the café Wi-Fi. The staff at the counter can help." } }
             },
             new Objective
             {
                 title = "Submit Thesis",
                 subTasks = new SubTask[] { new SubTask { description = "Open your laptop and finally submit your thesis." } }
+            },
+            new Objective
+            {
+                title = "Head Out",
+                subTasks = new SubTask[] { new SubTask { description = "Leave the café." } }
             }
         };
 
@@ -127,6 +133,7 @@ public class ObjectiveManager : MonoBehaviour
             GameProgressManager.Instance.On2FAEnabled          += Handle2FAEnabled;
             GameProgressManager.Instance.OnArrivedAtCafe       += HandleArrivedAtCafe;
             GameProgressManager.Instance.OnConnectedToCafeWiFi += HandleConnectedToCafeWiFi;
+            GameProgressManager.Instance.OnThesisSubmitted     += HandleThesisSubmitted;
         }
 
         // Determine which objective to show based on current progress
@@ -154,14 +161,17 @@ public class ObjectiveManager : MonoBehaviour
         var gp = GameProgressManager.Instance;
         Debug.Log($"[Objective] Flags → triedSubmit:{gp.triedSubmitWithoutInternet} hasFlash:{gp.hasFlashDrive} backedUp:{gp.thesisBackedUp} 2FA:{gp.is2FAEnabled} arrivedCafe:{gp.arrivedAtCafe} connectedCafe:{gp.connectedToCafeWiFi}");
 
+        // Submitted -> show "Head Out"
+        if (gp.thesisSubmitted) return 6;
+
         // If connected to cafe WiFi -> show "Submit Thesis"
         if (gp.connectedToCafeWiFi) return 5;
 
         // If arrived at cafe -> show "Get Connected"
         if (gp.arrivedAtCafe) return 4;
 
-        // If 2FA is done → show "Time to Go"
-        if (gp.is2FAEnabled && gp.thesisBackedUp) return 3;
+        // Backed up → show "Time to Go" (2FA is optional)
+        if (gp.thesisBackedUp) return 3;
 
         // If flash drive picked up → show "Secure Your Work"
         if (gp.hasFlashDrive) return 2;
@@ -236,7 +246,7 @@ public class ObjectiveManager : MonoBehaviour
         bool allDone = true;
         for (int i = 0; i < objectives[objectiveIndex].subTasks.Length; i++)
         {
-            if (!objectives[objectiveIndex].subTasks[i].completed)
+            if (!objectives[objectiveIndex].subTasks[i].completed && !objectives[objectiveIndex].subTasks[i].optional)
             {
                 allDone = false;
                 break;
@@ -260,6 +270,7 @@ public class ObjectiveManager : MonoBehaviour
     private void Handle2FAEnabled() { CompleteSubTask(2, 1); }
     private void HandleArrivedAtCafe() { CompleteAndAdvance(3, 0); }
     private void HandleConnectedToCafeWiFi() { CompleteAndAdvance(4, 0); }
+    private void HandleThesisSubmitted() { CompleteAndAdvance(5, 0); }
 
     void OnDestroy()
     {
@@ -271,6 +282,7 @@ public class ObjectiveManager : MonoBehaviour
             GameProgressManager.Instance.On2FAEnabled          -= Handle2FAEnabled;
             GameProgressManager.Instance.OnArrivedAtCafe       -= HandleArrivedAtCafe;
             GameProgressManager.Instance.OnConnectedToCafeWiFi -= HandleConnectedToCafeWiFi;
+            GameProgressManager.Instance.OnThesisSubmitted     -= HandleThesisSubmitted;
         }
     }
 

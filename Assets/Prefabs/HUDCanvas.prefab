@@ -295,8 +295,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 13
-  m_fontSizeBase: 13
+  m_fontSize: 16
+  m_fontSizeBase: 16
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -432,8 +432,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 16
-  m_fontSizeBase: 16
+  m_fontSize: 20
+  m_fontSizeBase: 20
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -538,20 +538,25 @@ MonoBehaviour:
   - title: Morning Routine
     subTasks:
     - description: Check your laptop and submit your thesis
+      optional: 0
       completed: 0
   - title: No Connection
     subTasks:
     - description: Find a flash drive to backup your thesis
+      optional: 0
       completed: 0
   - title: Secure Your Work
     subTasks:
     - description: Backup your thesis using the flash drive
+      optional: 0
       completed: 0
-    - description: Enable 2FA on your phone
+    - description: Enable 2FA on your phone (optional)
+      optional: 1
       completed: 0
   - title: Time to Go
     subTasks:
     - description: "Head to the caf\xE9"
+      optional: 0
       completed: 0
 --- !u!1 &4588506189820885453
 GameObject:
@@ -889,8 +894,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 16
-  m_fontSizeBase: 16
+  m_fontSize: 22
+  m_fontSizeBase: 22
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -1013,7 +1018,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
   m_UiScaleMode: 0
   m_ReferencePixelsPerUnit: 100
-  m_ScaleFactor: 1
+  m_ScaleFactor: 1.3
   m_ReferenceResolution: {x: 800, y: 600}
   m_ScreenMatchMode: 0
   m_MatchWidthOrHeight: 0

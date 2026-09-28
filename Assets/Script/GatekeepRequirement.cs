@@ -15,6 +15,9 @@ public class GatekeepRequirement : MonoBehaviour
     [Tooltip("Player must have enabled 2FA on phone")]
     public bool require2FAEnabled = false;
 
+    [Tooltip("Player must have ordered at the café counter")]
+    public bool requireReceipt = false;
+
     [Header("Feedback")]
     [TextArea]
     [Tooltip("Narration shown when the player tries to interact while locked")]
@@ -35,6 +38,7 @@ public class GatekeepRequirement : MonoBehaviour
         if (requireHasFlashDrive  && !gp.hasFlashDrive)             return false;
         if (requireThesisBackedUp && !gp.thesisBackedUp)            return false;
         if (require2FAEnabled     && !gp.is2FAEnabled)              return false;
+        if (requireReceipt        && !gp.hasReceipt)                return false;
 
         return true;
     }

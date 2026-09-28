@@ -43,7 +43,6 @@ public class WiFiManager : MonoBehaviour
     public bool isCompromised = false;
     private string _connectedNetwork = "";
     private string _savedNetwork = "";
-    private string _cafePassword = "cafe1234";
 
     // Track last known cafe zone state to avoid updating every frame unnecessarily
     private bool _lastCafeState = false;
@@ -241,7 +240,7 @@ public class WiFiManager : MonoBehaviour
 
     public void SubmitPassword()
     {
-        if (passwordInput.text == _cafePassword)
+        if (passwordInput.text == CafeCounter.WifiPassword)
         {
             passwordPopup.SetActive(false);
             DisconnectAll();

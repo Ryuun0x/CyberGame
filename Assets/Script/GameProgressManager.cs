@@ -19,6 +19,11 @@ public class GameProgressManager : MonoBehaviour
     public bool triedSubmitWithoutInternet = false;
     public bool arrivedAtCafe = false;
     public bool connectedToCafeWiFi = false;
+    public bool thesisSubmitted = false;     // uploaded from the café; unlocks the café exit and the chapter ending
+    public bool hasReceipt = false;          // ordered at the café counter; receipt has the real Wi-Fi password
+    public bool credentialsStolen = false;   // typed school login into the evil twin's sign-in page
+    public bool installedFakeUpdate = false; // clicked Download on the fake browser update; Chapter 2 locks the files
+    public bool accountHijacked = false;     // Chapter 2: the stolen login (credentialsStolen) gets used; set by how that plays out
 
     // ── Events (other scripts subscribe to these) ──────────
     public event Action OnFlashDrivePickedUp;
@@ -27,6 +32,7 @@ public class GameProgressManager : MonoBehaviour
     public event Action OnTriedSubmit;
     public event Action OnArrivedAtCafe;
     public event Action OnConnectedToCafeWiFi;
+    public event Action OnThesisSubmitted;
 
     void Awake()
     {
@@ -92,12 +98,29 @@ public class GameProgressManager : MonoBehaviour
         OnArrivedAtCafe?.Invoke();
     }
 
+    public void OrderDrink()
+    {
+        if (hasReceipt) return;
+
+        hasReceipt = true;
+        Debug.Log("[GameProgress] Ordered a drink; got the Wi-Fi receipt.");
+    }
+
     public void ConnectToCafeWiFi()
     {
         if (connectedToCafeWiFi) return; // already tracked
         
         connectedToCafeWiFi = true;
-        Debug.Log("[GameProgress] Connected to the real cafe WiFi!");
+        Debug.Log("[GameProgress] Connected to cafe WiFi.");
         OnConnectedToCafeWiFi?.Invoke();
+    }
+
+    public void SubmitThesis()
+    {
+        if (thesisSubmitted) return;
+
+        thesisSubmitted = true;
+        Debug.Log("[GameProgress] Thesis submitted.");
+        OnThesisSubmitted?.Invoke();
     }
 }

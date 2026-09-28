@@ -34,7 +34,7 @@ public class RaycastCrosshair : MonoBehaviour
         if (promptPanel != null)
         {
             promptPanel.gameObject.SetActive(false);
-            _promptCanvas = promptPanel.GetComponentInParent<Canvas>();
+            _promptCanvas = promptPanel.GetComponentInParent<Canvas>(true); // true: still found if the canvas starts hidden
         }
     }
 
@@ -104,7 +104,8 @@ public class RaycastCrosshair : MonoBehaviour
     void ShowPrompt(IInteractable interactable,
                     GatekeepRequirement gate, bool isLocked)
     {
-        if (promptPanel == null) return;
+        // A missing prompt must never stop E from working, so bail out instead of throwing.
+        if (promptPanel == null || _promptCanvas == null) return;
 
         MonoBehaviour targetMB = interactable as MonoBehaviour;
         if (targetMB == null) return;
@@ -125,8 +126,9 @@ public class RaycastCrosshair : MonoBehaviour
             promptActionText.color = isLocked ? lockedPromptColor : Color.white;
         }
 
-        // Convert world position to screen position
-        Vector3 worldPos = targetMB.transform.position + offset;
+        // Anchor to the center of what the ray hit, not the pivot (a door's pivot is on its hinge)
+        Vector3 center = _hit.collider != null ? _hit.collider.bounds.center : targetMB.transform.position;
+        Vector3 worldPos = center + offset;
         Vector3 screenPos = _camera.WorldToScreenPoint(worldPos);
 
         // Only show if object is in front of camera
