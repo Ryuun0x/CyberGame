@@ -70,6 +70,20 @@ public class ObjectiveManager : MonoBehaviour
         }
         Instance = this;
 
+        // Chapter 2 (the night after the café) has its own list; Chapter2 drives it.
+        if (GameProgressManager.Instance != null && GameProgressManager.Instance.chapter == 2)
+        {
+            objectives = new Objective[]
+            {
+                new Objective { title = "Late Night", subTasks = new SubTask[] { new SubTask { description = "Check your phone." } } },
+                new Objective { title = "Exam Tomorrow", subTasks = new SubTask[] { new SubTask { description = "Buy a scientific calculator: open your laptop (at your desk), then Browser > ShopHub." } } },
+                new Objective { title = "Report Ghostline", subTasks = new SubTask[] { new SubTask { description = "Report Ghostline: laptop > Browser > Report a Cybercrime." } } },
+                new Objective { title = "Get Some Sleep", subTasks = new SubTask[] { new SubTask { description = "Close the laptop (Esc), then go to bed and press E." } } },
+            };
+            if (subTaskTemplate != null) subTaskTemplate.gameObject.SetActive(false);
+            return;
+        }
+
         // Hardcode objectives here so the Unity Inspector doesn't override them
         objectives = new Objective[]
         {
@@ -140,7 +154,9 @@ public class ObjectiveManager : MonoBehaviour
         int startIndex = GetCurrentObjectiveFromProgress();
         Debug.Log($"[Objective] Starting at objective index: {startIndex}");
 
-        if (initialDelay > 0f && startIndex == 0)
+        // The delay waits out the wake-up cinematic, which Chapter 2 skips (its story completes objective 0 early).
+        bool wakeUp = GameProgressManager.Instance == null || GameProgressManager.Instance.chapter == 1;
+        if (initialDelay > 0f && startIndex == 0 && wakeUp)
             StartCoroutine(ShowFirstObjectiveAfterDelay());
         else
             SetObjective(startIndex);
@@ -159,7 +175,8 @@ public class ObjectiveManager : MonoBehaviour
         }
 
         var gp = GameProgressManager.Instance;
-        Debug.Log($"[Objective] Flags → triedSubmit:{gp.triedSubmitWithoutInternet} hasFlash:{gp.hasFlashDrive} backedUp:{gp.thesisBackedUp} 2FA:{gp.is2FAEnabled} arrivedCafe:{gp.arrivedAtCafe} connectedCafe:{gp.connectedToCafeWiFi}");
+        if (gp.chapter == 2) return 0; // Chapter2 advances it
+        Debug.Log($"[Objective] Flags > triedSubmit:{gp.triedSubmitWithoutInternet} hasFlash:{gp.hasFlashDrive} backedUp:{gp.thesisBackedUp} 2FA:{gp.is2FAEnabled} arrivedCafe:{gp.arrivedAtCafe} connectedCafe:{gp.connectedToCafeWiFi}");
 
         // Submitted -> show "Head Out"
         if (gp.thesisSubmitted) return 6;
@@ -170,16 +187,16 @@ public class ObjectiveManager : MonoBehaviour
         // If arrived at cafe -> show "Get Connected"
         if (gp.arrivedAtCafe) return 4;
 
-        // Backed up → show "Time to Go" (2FA is optional)
+        // Backed up > show "Time to Go" (2FA is optional)
         if (gp.thesisBackedUp) return 3;
 
-        // If flash drive picked up → show "Secure Your Work"
+        // If flash drive picked up > show "Secure Your Work"
         if (gp.hasFlashDrive) return 2;
 
-        // If tried to submit → show "No Connection"
+        // If tried to submit > show "No Connection"
         if (gp.triedSubmitWithoutInternet) return 1;
 
-        // Default → first objective
+        // Default > first objective
         return 0;
     }
 
@@ -257,20 +274,14 @@ public class ObjectiveManager : MonoBehaviour
             StartCoroutine(CompleteObjective());
     }
 
-    public void CompleteAndAdvance(int objectiveIndex, int subTaskIndex)
-    {
-        if (objectiveIndex != _currentIndex) return;
-        CompleteSubTask(objectiveIndex, subTaskIndex);
-    }
-
     // ── Event Handlers ──────────────────────────────────────
-    private void HandleTriedSubmit() { CompleteAndAdvance(0, 0); }
-    private void HandleFlashDrivePickedUp() { CompleteAndAdvance(1, 0); }
+    private void HandleTriedSubmit() { CompleteSubTask(0, 0); }
+    private void HandleFlashDrivePickedUp() { CompleteSubTask(1, 0); }
     private void HandleThesisBackedUp() { CompleteSubTask(2, 0); }
     private void Handle2FAEnabled() { CompleteSubTask(2, 1); }
-    private void HandleArrivedAtCafe() { CompleteAndAdvance(3, 0); }
-    private void HandleConnectedToCafeWiFi() { CompleteAndAdvance(4, 0); }
-    private void HandleThesisSubmitted() { CompleteAndAdvance(5, 0); }
+    private void HandleArrivedAtCafe() { CompleteSubTask(3, 0); }
+    private void HandleConnectedToCafeWiFi() { CompleteSubTask(4, 0); }
+    private void HandleThesisSubmitted() { CompleteSubTask(5, 0); }
 
     void OnDestroy()
     {

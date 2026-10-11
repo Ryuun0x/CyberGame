@@ -111,7 +111,7 @@ public class CityMapController : MonoBehaviour
         pinSprite = UIBuild.Icon(64, IsPin, Color.white);
         miniRoot = Panel("Minimap", hudRoot, new Vector2(226, 226), new Color(0.035f, 0.055f, 0.075f, 0.96f));
         miniRoot.GetComponent<Image>().sprite = circleSprite;
-        miniRoot.anchorMin = miniRoot.anchorMax = miniRoot.pivot = Vector2.zero;
+        miniRoot.anchorMin = miniRoot.anchorMax = miniRoot.pivot = Vector2.one; // top-right corner
         var clip = Panel("Clip", miniRoot, new Vector2(210, 210), Color.white);
         clip.GetComponent<Image>().sprite = circleSprite;
         clip.gameObject.AddComponent<Mask>().showMaskGraphic = false;
@@ -272,7 +272,7 @@ public class CityMapController : MonoBehaviour
         if (visible)
         {
             Rect safe = Screen.safeArea;
-            miniRoot.anchoredPosition = new Vector2(safe.xMin / hud.scaleFactor + 24, safe.yMin / hud.scaleFactor + 24);
+            miniRoot.anchoredPosition = new Vector2((safe.xMax - Screen.width) / hud.scaleFactor - 24, (safe.yMax - Screen.height) / hud.scaleFactor - 24);
         }
         if (IsExpanded && opening == null) FitPhone();
         if (visible || IsExpanded) UpdateMap();

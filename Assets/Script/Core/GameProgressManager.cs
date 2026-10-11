@@ -12,6 +12,7 @@ public class GameProgressManager : MonoBehaviour
 
     // ── Progression Flags ──────────────────────────────────
     [Header("Progression State (read-only in Inspector)")]
+    public int chapter = 1;                  // 2 = the night after the café (Interior at night)
     public bool wakeUpPlayed = false;
     public bool hasFlashDrive = false;
     public bool thesisBackedUp = false;
@@ -24,6 +25,11 @@ public class GameProgressManager : MonoBehaviour
     public bool credentialsStolen = false;   // typed school login into the evil twin's sign-in page
     public bool installedFakeUpdate = false; // clicked Download on the fake browser update; Chapter 2 locks the files
     public bool accountHijacked = false;     // Chapter 2: the stolen login (credentialsStolen) gets used; set by how that plays out
+    public bool sentMoneyToScammer = false;  // Chapter 2: sent ₱1,000 to Kai's hijacked account
+    public bool reusedPassword = false;      // Chapter 2: used the school password for ShopHub; it leaks later
+    public bool paidScamSeller = false;      // Chapter 2: paid gadget.deals.ph upfront; the calculator never comes
+    public bool sawGhostlineSeller = false;  // Chapter 2: opened the scam seller's chat and saw the Ghostline logo (a clue)
+    public bool lostFiles = false;           // Chapter 2: wiped the laptop with no backup; the thesis icon is gone
 
     // ── Events (other scripts subscribe to these) ──────────
     public event Action OnFlashDrivePickedUp;
