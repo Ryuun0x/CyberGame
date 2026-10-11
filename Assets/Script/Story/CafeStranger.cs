@@ -87,7 +87,7 @@ public class CafeStranger : MonoBehaviour
     }
 
     // Ghost: round head, straight sides, wavy hem, two eye holes.
-    static bool IsGhost(float x, float y)
+    public static bool IsGhost(float x, float y)
     {
         bool head = y > 0 && x * x + y * y < 0.6f;
         bool body = y <= 0 && Mathf.Abs(x) < 0.77f && y > -0.75f + 0.12f * Mathf.Cos(x * 12f);

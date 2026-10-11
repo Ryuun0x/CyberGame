@@ -22,6 +22,7 @@ public class DebriefScreen : MonoBehaviour
     static readonly Color TextDim = new Color(0.62f, 0.67f, 0.75f, 1f);
     static readonly Color SafeColor = new Color(0.36f, 0.85f, 0.52f, 1f);
     static readonly Color RecoveredColor = new Color(0.98f, 0.76f, 0.3f, 1f);
+    static readonly Color PendingColor = new Color(0.66f, 0.58f, 0.98f, 1f);
     static readonly Color CompromisedColor = new Color(0.96f, 0.38f, 0.38f, 1f);
     static readonly Color PrimaryButton = new Color(0.25f, 0.52f, 0.96f, 1f);
     static readonly Color SecondaryButton = new Color(0.18f, 0.21f, 0.28f, 1f);
@@ -30,15 +31,17 @@ public class DebriefScreen : MonoBehaviour
 
     CanvasGroup _group;
 
-    string _nextChapter;
+    string _nextChapter, _summary;
 
     // nextChapter: if set, a Continue button leads to that chapter's title card.
-    public static void Show(string chapterTitle, string nextChapter = null)
+    // summary: the line under the title; leave it out to use the Chapter 1 thesis line.
+    public static void Show(string chapterTitle, string nextChapter = null, string summary = null)
     {
         if (IsOpen) return;
         IsOpen = true;
         var screen = new GameObject("DebriefScreen").AddComponent<DebriefScreen>();
         screen._nextChapter = nextChapter;
+        screen._summary = summary;
         screen.Build(chapterTitle);
     }
 
@@ -74,9 +77,9 @@ public class DebriefScreen : MonoBehaviour
         var eyebrow = UIBuild.Label(panel, "CHAPTER COMPLETE", 20, TextDim, FontStyles.Bold);
         eyebrow.characterSpacing = 8;
         UIBuild.Label(panel, chapterTitle, 46, TextMain, FontStyles.Bold);
-        UIBuild.Label(panel, compromised
+        UIBuild.Label(panel, _summary ?? (compromised
             ? "Your thesis was submitted, but an attacker stole your school login."
-            : "Your thesis was submitted safely.", 24, TextMain, FontStyles.Normal);
+            : "Your thesis was submitted safely."), 24, TextMain, FontStyles.Normal);
         UIBuild.Label(panel, $"Security score  <b>{score}%</b>   ·   {ThreatLog.RatingFor(score)}", 28, scoreColor, FontStyles.Normal);
 
         var content = ScrollArea(panel);
@@ -148,7 +151,7 @@ public class DebriefScreen : MonoBehaviour
         SceneManager.LoadScene(sceneName);
     }
 
-    // Next chapter's title card over the debrief. Nothing is built past it yet, so it ends at the menu.
+    // Next chapter's title card over the debrief, then that chapter starts.
     IEnumerator TitleCard()
     {
         var card = UIBuild.Stretch(UIBuild.NewRect("TitleCard", transform));
@@ -158,22 +161,24 @@ public class DebriefScreen : MonoBehaviour
         UIBuild.Column(card, 0, 24).childAlignment = TextAnchor.MiddleCenter;
         var title = UIBuild.Label(card, _nextChapter, 72, TextMain, FontStyles.Bold);
         title.alignment = TextAlignmentOptions.Center;
-        var soon = UIBuild.Label(card, "To be continued", 26, TextDim, FontStyles.Italic);
-        soon.alignment = TextAlignmentOptions.Center;
         for (float t = 0f; t < 1f; t += Time.unscaledDeltaTime / 1.2f)
         {
             group.alpha = t;
             yield return null;
         }
         group.alpha = 1f;
-        yield return new WaitForSecondsRealtime(1.5f);
-        var buttons = UIBuild.NewRect("Buttons", card);
-        var row = buttons.gameObject.AddComponent<HorizontalLayoutGroup>();
-        row.childAlignment = TextAnchor.MiddleCenter;
-        row.childControlWidth = row.childControlHeight = true;
-        row.childForceExpandWidth = row.childForceExpandHeight = false;
-        UIBuild.MakeButton(buttons, Application.CanStreamedLevelBeLoaded(MenuScene) ? "Main Menu" : "Play Again", SecondaryButton,
-            () => LoadFresh(Application.CanStreamedLevelBeLoaded(MenuScene) ? MenuScene : RestartScene));
+        yield return new WaitForSecondsRealtime(2.5f);
+        StartNextChapter();
+    }
+
+    // Next chapter starts at home: same progress and threat log (the finale recaps every choice).
+    static void StartNextChapter()
+    {
+        Time.timeScale = 1f;
+        IsOpen = false;
+        if (GameProgressManager.Instance != null) GameProgressManager.Instance.chapter++;
+        CafeZone.PlayerInCafe = false;
+        SceneManager.LoadScene(RestartScene);
     }
 
     IEnumerator FadeIn()
@@ -194,16 +199,42 @@ public class DebriefScreen : MonoBehaviour
         foreach (var e in log.Entries)
         {
             var info = ThreatCatalog.Get(e.id);
-            if (info == null || info.Kind != kind) continue;
-            if (!any)
-            {
-                var h = UIBuild.Label(content, heading, 18, TextDim, FontStyles.Bold);
-                h.characterSpacing = 6;
-                h.margin = new Vector4(0, 10, 0, 0);
-                any = true;
-            }
+            if (info == null || info.Kind != kind || log.IsPending(e.id)) continue;
+            if (!any) any = Heading(content, heading);
             AddCard(content, info, e.outcome);
         }
+        foreach (var id in log.Pending)
+        {
+            var info = ThreatCatalog.Get(id);
+            if (info == null || info.Kind != kind) continue;
+            if (!any) any = Heading(content, heading);
+            AddPendingCard(content, info);
+        }
+    }
+
+    static bool Heading(RectTransform content, string heading)
+    {
+        var h = UIBuild.Label(content, heading, 18, TextDim, FontStyles.Bold);
+        h.characterSpacing = 6;
+        h.margin = new Vector4(0, 10, 0, 0);
+        return true;
+    }
+
+    // Consequence still to come: no result or lesson yet, so nothing is given away.
+    static void AddPendingCard(RectTransform parent, ThreatInfo info)
+    {
+        var body = CardBody(parent, info, PendingColor, "PENDING");
+        var line = UIBuild.NewRect("Pending", body);
+        var row = line.gameObject.AddComponent<HorizontalLayoutGroup>();
+        row.spacing = 10;
+        row.childAlignment = TextAnchor.MiddleLeft;
+        row.childControlWidth = row.childControlHeight = true;
+        row.childForceExpandWidth = row.childForceExpandHeight = false;
+        var butterfly = UIBuild.NewRect("Butterfly", line); // the consequence notice's butterfly (the font has no emoji)
+        butterfly.gameObject.AddComponent<Image>().sprite = Resources.Load<Sprite>("ConsequenceButterfly");
+        var size = butterfly.gameObject.AddComponent<LayoutElement>();
+        size.preferredWidth = size.preferredHeight = 30;
+        UIBuild.Label(line, "CONSEQUENCE PENDING — You'll find out.", 21, PendingColor, FontStyles.Bold);
     }
 
     static void AddCard(RectTransform parent, ThreatInfo info, ThreatOutcome outcome)
@@ -218,6 +249,15 @@ public class DebriefScreen : MonoBehaviour
             : outcome == ThreatOutcome.Recovered ? info.RecoveredResult ?? info.SafeResult
             : info.CompromisedResult;
 
+        var body = CardBody(parent, info, accent, badge);
+        UIBuild.Label(body, result, 21, TextMain, FontStyles.Normal);
+        UIBuild.Label(body, $"<b>What to do:</b> {info.Lesson}", 20, TextDim, FontStyles.Normal);
+        UIBuild.Label(body, info.Source, 15, TextDim, FontStyles.Italic);
+    }
+
+    // Card frame: accent stripe, title with category, badge. Returns the body to fill.
+    static RectTransform CardBody(RectTransform parent, ThreatInfo info, Color accent, string badge)
+    {
         var card = UIBuild.NewRect("Card", parent);
         card.gameObject.AddComponent<Image>().color = CardColor;
         var cardRow = card.gameObject.AddComponent<HorizontalLayoutGroup>();
@@ -251,10 +291,7 @@ public class DebriefScreen : MonoBehaviour
         var badgeLabel = UIBuild.Label(header, badge, 18, accent, FontStyles.Bold);
         badgeLabel.alignment = TextAlignmentOptions.Right;
         badgeLabel.characterSpacing = 4;
-
-        UIBuild.Label(body, result, 21, TextMain, FontStyles.Normal);
-        UIBuild.Label(body, $"<b>What to do:</b> {info.Lesson}", 20, TextDim, FontStyles.Normal);
-        UIBuild.Label(body, info.Source, 15, TextDim, FontStyles.Italic);
+        return body;
     }
 
     static RectTransform ScrollArea(RectTransform parent)

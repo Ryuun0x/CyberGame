@@ -1,4 +1,4 @@
-﻿using StarterAssets;
+using StarterAssets;
 using System.Collections;
 using TMPro;
 using UnityEngine;
@@ -52,6 +52,14 @@ public class WakeUpSequence : MonoBehaviour
 
         if (narrationBox != null)
             narrationBox.SetActive(false);
+
+        // Chapter 2 starts at the desk at night, no wake-up cinematic.
+        if (GameProgressManager.Instance != null && GameProgressManager.Instance.chapter == 2)
+        {
+            SkipToFPS();
+            gameObject.AddComponent<Chapter2>().Begin(player);
+            return;
+        }
 
         // Check GameProgressManager instead of PlayerPrefs
         // Since GPM is DontDestroyOnLoad, this resets when you restart the game

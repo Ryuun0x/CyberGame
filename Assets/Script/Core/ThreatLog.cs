@@ -15,8 +15,10 @@ public class ThreatLog : MonoBehaviour
 
     readonly List<Entry> _entries = new List<Entry>();
     readonly HashSet<string> _exposed = new HashSet<string>();
+    readonly HashSet<string> _pending = new HashSet<string>();
 
     public IReadOnlyList<Entry> Entries => _entries;
+    public IReadOnlyCollection<string> Pending => _pending;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void Bootstrap()
@@ -30,6 +32,12 @@ public class ThreatLog : MonoBehaviour
     {
         _exposed.Add(id);
     }
+
+    // A choice whose consequence plays out later (e.g. in Chapter 2): the debrief shows it as pending and
+    // leaves it out of the score until Resolve. It may or may not have an entry recorded already.
+    public void MarkPending(string id) => _pending.Add(id);
+    public void Resolve(string id) => _pending.Remove(id);
+    public bool IsPending(string id) => _pending.Contains(id);
 
     public void Record(string id, bool safe)
     {
@@ -65,7 +73,7 @@ public class ThreatLog : MonoBehaviour
         foreach (var e in _entries)
         {
             var info = ThreatCatalog.Get(e.id);
-            if (info != null && info.Kind == ThreatKind.Threat && e.outcome == ThreatOutcome.Compromised)
+            if (info != null && info.Kind == ThreatKind.Threat && e.outcome == ThreatOutcome.Compromised && !_pending.Contains(e.id))
                 return true;
         }
         return false;
@@ -77,7 +85,7 @@ public class ThreatLog : MonoBehaviour
         foreach (var e in _entries)
         {
             var info = ThreatCatalog.Get(e.id);
-            if (info == null || info.Kind != ThreatKind.Threat) continue;
+            if (info == null || info.Kind != ThreatKind.Threat || _pending.Contains(e.id)) continue;
             count++;
             total += e.outcome == ThreatOutcome.Safe ? 100 : e.outcome == ThreatOutcome.Recovered ? 60 : 0;
         }
@@ -95,5 +103,6 @@ public class ThreatLog : MonoBehaviour
     {
         _entries.Clear();
         _exposed.Clear();
+        _pending.Clear();
     }
 }

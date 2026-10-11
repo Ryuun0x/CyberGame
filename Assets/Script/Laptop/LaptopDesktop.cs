@@ -13,8 +13,6 @@ public class LaptopDesktop : MonoBehaviour
     [Header("Backup")]
     [Tooltip("The backup button inside the thesis window — hidden until flash drive is found")]
     public GameObject backupButton;
-    [Tooltip("Optional: popup/message shown after successful backup")]
-    public GameObject backupSuccessPopup;
 
     [Header("Taskbar")]
     public TextMeshProUGUI timeText;
@@ -54,8 +52,6 @@ public class LaptopDesktop : MonoBehaviour
         // Hide backup button until flash drive is found
         if (backupButton != null)
             backupButton.SetActive(false);
-        if (backupSuccessPopup != null)
-            backupSuccessPopup.SetActive(false);
 
         _hasInternet = true;
 
@@ -109,6 +105,12 @@ public class LaptopDesktop : MonoBehaviour
     public void OpenThesis()
     {
         if (_thesisOpen) return;
+        // Chapter 2: the thesis was already submitted; the Chapter 1 thesis / no-internet flow must not replay.
+        if (GameProgressManager.Instance != null && GameProgressManager.Instance.chapter >= 2)
+        {
+            if (NarrationManager.Instance != null) NarrationManager.Instance.Show("I already submitted my thesis.", 3f);
+            return;
+        }
         _thesisOpen = true;
 
         // Show thesis window
@@ -249,13 +251,6 @@ public class LaptopDesktop : MonoBehaviour
             noInternetPopup.SetActive(false);
     }
 
-    // Called by Close button on the backup success popup
-    public void CloseBackupSuccessPopup()
-    {
-        if (backupSuccessPopup != null)
-            backupSuccessPopup.SetActive(false);
-    }
-
     IEnumerator LoseInternetAfterDelay()
     {
         bool isInterior = SceneManager.GetActiveScene().name == "Interior";
@@ -279,13 +274,6 @@ public class LaptopDesktop : MonoBehaviour
             tooltipStatus.text = "No Internet access";
             tooltipStatus.color = new Color(1f, 0.4f, 0.4f);
         }
-    }
-
-    IEnumerator HidePopupAfterDelay(GameObject popup, float delay)
-    {
-        yield return new WaitForSecondsRealtime(delay);
-        if (popup != null)
-            popup.SetActive(false);
     }
 
     IEnumerator PlayFrustrationNarration()
@@ -341,6 +329,9 @@ public class LaptopDesktop : MonoBehaviour
         {
             ThreatLog.Instance.Record("backup", gp.thesisBackedUp);
             ThreatLog.Instance.Record("mfa", gp.is2FAEnabled);
+            // Paid off in Chapter 2: the stolen login gets used; the "update" locks the files.
+            if (gp.credentialsStolen) ThreatLog.Instance.MarkPending("login_alert");
+            if (gp.installedFakeUpdate) ThreatLog.Instance.MarkPending("fake_update");
         }
         DebriefScreen.Show(chapterTitle, nextChapterTitle);
     }

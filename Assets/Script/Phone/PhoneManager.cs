@@ -14,6 +14,7 @@ public class PhoneManager : MonoBehaviour
     [TextArea]
     public string blockedNarration = "I don't need my phone right now. Let me focus on my thesis.";
     public bool IsOpen { get; private set; }
+    public bool Locked { get; set; } // a story alert is up: Tab/Esc/M can't close the phone
     public CityMapController Map { get; private set; }
     float previousTimeScale;
     CursorLockMode previousCursorLock;
@@ -43,6 +44,7 @@ public class PhoneManager : MonoBehaviour
         bool mapKey = Input.GetKeyDown(KeyCode.M);
         bool back = Input.GetKeyDown(KeyCode.Escape);
 #endif
+        if (Locked) return;
         if (tab) { TogglePhone(); return; }
         var selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
         bool typing = selected != null && selected.GetComponent<TMP_InputField>() != null;

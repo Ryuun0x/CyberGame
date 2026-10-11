@@ -90,7 +90,15 @@ public static class CafeWifiChecks
 
             Check(ThreatCatalog.Get("login_alert")?.Category == "Accounts", "login_alert is in the catalog.");
 
-            Debug.Log("[CafeWifiChecks] PASS: receipt, wrong/right password, Safe, Cancel → Recovered, Sign in → Compromised + stolen, override, leave café, toast, fake update.");
+            // Pending consequences stay out of the score until resolved.
+            log.ResetLog();
+            log.Record("evil_twin", false);
+            log.MarkPending("evil_twin");
+            Check(log.ScorePercent() == 100 && !log.AnyCompromised(), "Pending threats are left out of the score.");
+            log.Resolve("evil_twin");
+            Check(log.ScorePercent() == 0 && log.AnyCompromised(), "Resolved threats count again.");
+
+            Debug.Log("[CafeWifiChecks] PASS: receipt, wrong/right password, Safe, Cancel → Recovered, Sign in → Compromised + stolen, override, leave café, toast, fake update, pending.");
         }
         finally
         {

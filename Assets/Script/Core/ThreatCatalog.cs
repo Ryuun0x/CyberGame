@@ -48,6 +48,18 @@ public static class ThreatCatalog
 
         Add(new ThreatInfo
         {
+            Id = "friend_scam",
+            Kind = ThreatKind.Threat,
+            Category = "Social engineering",
+            Title = "Friend's hacked account asks for money",
+            SafeResult = "Kai's account asked you to send ₱1,000. You called Kai first, found out the account was hacked, and sent nothing.",
+            CompromisedResult = "You sent ₱1,000 to a scammer using Kai's hacked account. Kai never got it.",
+            Lesson = "When a friend's account suddenly asks for money, verify through another channel, like a phone call. Hacked accounts send friends fake pleas for help or money, and replying in the same chat only reaches the scammer.",
+            Source = "FTC, \"How to Recover Your Hacked Email or Social Media Account\""
+        });
+
+        Add(new ThreatInfo
+        {
             Id = "fake_update",
             Kind = ThreatKind.Threat,
             Category = "Malware",
@@ -68,6 +80,43 @@ public static class ThreatCatalog
             CompromisedResult = "You left home with a single copy of your thesis.",
             Lesson = "Keep at least one copy of important files offline, on a drive you unplug, so malware or theft can't reach every copy.",
             Source = "CISA, #StopRansomware Guide (2023): maintain offline, encrypted backups"
+        });
+
+        Add(new ThreatInfo
+        {
+            Id = "ransomware",
+            Kind = ThreatKind.Threat,
+            Category = "Malware",
+            Title = "Files locked for ransom",
+            SafeResult = "The fake update locked your files and demanded ₱5,000. You didn't pay: you wiped the laptop (and restored your files if you had a backup).",
+            CompromisedResult = "You paid the ransom. The attackers just asked for more, and the files stayed locked.",
+            Lesson = "Never pay a ransom: it doesn't guarantee your files come back and it funds the attackers. An offline backup is what lets you recover.",
+            Source = "CISA, #StopRansomware Guide (2023)"
+        });
+
+        Add(new ThreatInfo
+        {
+            Id = "password_reuse",
+            Kind = ThreatKind.Threat,
+            Category = "Passwords",
+            Title = "Reused password",
+            SafeResult = "You made a new, long password just for ShopHub, so a leak there can't open your other accounts.",
+            CompromisedResult = "You reused your school password on ShopHub. When ShopHub was breached, that password opened your school account too.",
+            Lesson = "Use a different, long password for every account (CISA recommends at least 16 characters). A password manager remembers them for you.",
+            Source = "CISA, Secure Our World: \"Use Strong Passwords\""
+        });
+
+        Add(new ThreatInfo
+        {
+            Id = "online_selling_scam",
+            Kind = ThreatKind.Threat,
+            Category = "Online scams",
+            Title = "Fake online seller",
+            SafeResult = "You bought from a seller with a long history and good reviews, paying in a way that protects you.",
+            RecoveredResult = "You opened the too-cheap seller's chat, but backed out and bought from a trusted seller instead.",
+            CompromisedResult = "You paid a brand-new seller with no reviews upfront by GCash. The calculator never arrived.",
+            Lesson = "Check the seller's reviews and account age, be wary of prices far below market, and avoid paying strangers upfront by e-wallet. Use the platform's checkout or cash on delivery.",
+            Source = "FTC, \"Buying From an Online Marketplace\"; PNP-ACG: online selling scams were the most common cybercrime in 2024–2025"
         });
 
         Add(new ThreatInfo
