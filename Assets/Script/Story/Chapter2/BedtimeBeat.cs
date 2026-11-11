@@ -10,8 +10,12 @@ using static StoryTools;
 //   4. The final results screen.
 public static class BedtimeBeat
 {
+    // The lying-down shot and the epilogue (the hotbar and objective box hide meanwhile).
+    public static bool Playing { get; private set; }
+
     public static IEnumerator Play(WakeUpSequence wake)
     {
+        Playing = false;
         // 1. Wait for the player to get into bed.
         var bed = Object.FindFirstObjectByType<BedSleep>(FindObjectsInactive.Include);
         bed.gameObject.SetActive(true);
@@ -26,6 +30,7 @@ public static class BedtimeBeat
             yield return null;
         }
         CompleteObjective(3);
+        Playing = true;
 
         // 2. Lie down: move the wake-up camera from the player's eyes back to its bed pose.
         var controller = wake.player.GetComponentInChildren<FirstPersonController>();
@@ -69,6 +74,7 @@ public static class BedtimeBeat
 
         // 4. The final results.
         DebriefScreen.Show("Chapter 2: Ghostline", null, Headline(score));
+        Playing = false;
     }
 
     // What the report led to: the better the player protected themselves, the stronger their report.
@@ -88,7 +94,7 @@ public static class BedtimeBeat
         if (score >= 90) lines.Add("Kai finally got their account back.");
         if (Progress.sentMoneyToScammer) lines.Add("Kai never got my ₱1,000. It went straight to Ghostline.");
         if (Progress.paidScamSeller) lines.Add("The calculator from gadget.deals.ph never arrived.");
-        if (Progress.accountHijacked) lines.Add("Ghostline used my school account to message my classmates before I got it back.");
+        if (Progress.accountHijacked) lines.Add("Ghostline used my Goggle account to message my classmates before I got it back.");
         if (Progress.lostFiles) lines.Add("I never got back the files on my old laptop.");
         return lines;
     }

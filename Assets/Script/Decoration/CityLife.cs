@@ -47,20 +47,27 @@ public class CityLife : MonoBehaviour
             }
             foreach (var spot in cafeSpots) Person("Café customer", spot.position, spot.yaw);
         }
-        if (carPrefabs != null && carPrefabs.Length > 0)
+        AddCars(cars);
+    }
+
+    // Puts up to "count" cars on the roads. With a radius, only on road pieces whose middle is that close to
+    // "near" (the city arrival shots use this so there is traffic in view).
+    public void AddCars(int count, Vector3 near = default, float radius = 0)
+    {
+        if (carPrefabs == null || carPrefabs.Length == 0) return;
+        int placed = 0;
+        for (int attempt = 0; attempt < count * 50 && placed < count; attempt++)
         {
-            int placed = 0;
-            for (int attempt = 0; attempt < cars * 10 && placed < cars; attempt++)
-            {
-                var (x, z) = RandomNode();
-                var next = Neighbours(x, z);
-                if (next.Count == 0) continue;
-                var (nx, nz) = next[UnityEngine.Random.Range(0, next.Count)];
-                var prefab = carPrefabs[UnityEngine.Random.Range(0, carPrefabs.Length)];
-                var car = Instantiate(prefab, transform).AddComponent<CityCar>();
-                if (!car.Begin(this, x, z, nx, nz, UnityEngine.Random.value)) { Destroy(car.gameObject); continue; }
-                placed++;
-            }
+            var (x, z) = RandomNode();
+            var next = Neighbours(x, z);
+            if (next.Count == 0) continue;
+            var (nx, nz) = next[UnityEngine.Random.Range(0, next.Count)];
+            Vector3 middle = (Node(x, z) + Node(nx, nz)) / 2;
+            if (radius > 0 && new Vector2(middle.x - near.x, middle.z - near.z).magnitude > radius) continue;
+            var prefab = carPrefabs[UnityEngine.Random.Range(0, carPrefabs.Length)];
+            var car = Instantiate(prefab, transform).AddComponent<CityCar>();
+            if (!car.Begin(this, x, z, nx, nz, UnityEngine.Random.value)) { Destroy(car.gameObject); continue; }
+            placed++;
         }
     }
 

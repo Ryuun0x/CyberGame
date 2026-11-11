@@ -15,6 +15,12 @@ public class PhoneHomeScreen : MonoBehaviour
     public GameObject wifiScreen;
     public GameObject authenticatorScreen;
     public GameObject messagesScreen;
+    [Tooltip("The Mail app: one email from the school asking students to turn on 2FA (a hint; never required).")]
+    public GameObject mailScreen;
+    [Tooltip("The News app: a short warning about the attacks (no advice).")]
+    public GameObject newsScreen;
+    [Tooltip("The red \"1\" on the Mail and News icons while there is something unread (GameProgressManager.mailUnread / newsUnread).")]
+    public GameObject mailBadge, newsBadge;
 
     [Header("Messages screen parts")]
     public TextMeshProUGUI chatTitle;
@@ -23,6 +29,15 @@ public class PhoneHomeScreen : MonoBehaviour
     public GameObject bubbleTemplate;
 
     [HideInInspector] public CityMapController mapController;
+
+    static GameProgressManager Progress => GameProgressManager.Instance;
+
+    // The phone stops game time, and the home screen is only on while the phone is open: cheap enough per frame.
+    void Update()
+    {
+        mailBadge.SetActive(Progress != null && Progress.mailUnread);
+        newsBadge.SetActive(Progress != null && Progress.newsUnread);
+    }
 
     void Awake()
     {
@@ -79,6 +94,24 @@ public class PhoneHomeScreen : MonoBehaviour
         row.GetComponentInChildren<TextMeshProUGUI>().text = text;
     }
 
+    public void OpenMail()
+    {
+        HideAll();
+        mailScreen.SetActive(true);
+        if (Progress == null || !Progress.mailUnread) return;
+        Progress.mailUnread = false;
+        // Reading the school's email brings the next thing to read: the news (a warning only).
+        Progress.newsUnread = true;
+        PhoneNotifications.Show("NEWS 24", "Cyber attacks hit students across the city");
+    }
+
+    public void OpenNews()
+    {
+        HideAll();
+        newsScreen.SetActive(true);
+        if (Progress != null) Progress.newsUnread = false;
+    }
+
     public void OpenMessages()
     {
         HideAll();
@@ -103,5 +136,7 @@ public class PhoneHomeScreen : MonoBehaviour
         if (wifiScreen != null) wifiScreen.SetActive(false);
         if (authenticatorScreen != null) authenticatorScreen.SetActive(false);
         if (messagesScreen != null) messagesScreen.SetActive(false);
+        if (mailScreen != null) mailScreen.SetActive(false);
+        if (newsScreen != null) newsScreen.SetActive(false);
     }
 }

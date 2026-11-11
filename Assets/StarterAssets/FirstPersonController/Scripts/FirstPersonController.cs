@@ -122,8 +122,10 @@ namespace StarterAssets
             {
                 float deltaTimeMultiplier = IsCurrentDeviceMouse ? 1.0f : Time.deltaTime;
 
-                _cinemachineTargetPitch += _input.look.y * RotationSpeed * deltaTimeMultiplier;
-                _rotationVelocity = _input.look.x * RotationSpeed * deltaTimeMultiplier;
+                // Settings: mouse sensitivity (GameSettings)
+                float speed = RotationSpeed * GameSettings.Sensitivity;
+                _cinemachineTargetPitch += _input.look.y * speed * deltaTimeMultiplier;
+                _rotationVelocity = _input.look.x * speed * deltaTimeMultiplier;
 
                 _cinemachineTargetPitch = ClampAngle(_cinemachineTargetPitch, BottomClamp, TopClamp);
 

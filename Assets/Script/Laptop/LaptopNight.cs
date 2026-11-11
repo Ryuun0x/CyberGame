@@ -26,6 +26,8 @@ public class LaptopNight : MonoBehaviour
     public GameObject signUpPage;
     public GameObject newPasswordPage;
     public GameObject listingsPage;
+    [Tooltip("One item page, filled by ShopHubBeat for the listing that was clicked.")]
+    public GameObject productPage;
     public GameObject scamChatPage;
     public GameObject orderPlacedPage;
     public GameObject reportPage;
@@ -33,15 +35,35 @@ public class LaptopNight : MonoBehaviour
 
     [Header("Page parts the story changes")]
     public TMP_InputField newPasswordField;
+    [Tooltip("The read-only Email boxes on the ShopHub sign-up pages, filled with the student's email.")]
+    public TMP_InputField[] shopEmailFields;
     public TextMeshProUGUI passwordStrength;
     public TextMeshProUGUI orderPlacedText;
     public GameObject sellerClue;
+    [Header("ShopHub item page")]
+    public TextMeshProUGUI productTitle, productPrice, productDetails, sellerInfo, reviewsText;
+    public UnityEngine.UI.Image sellerAvatar;
 
     [Header("Locked files (ransomware)")]
     public TextMeshProUGUI lockedMessage;
     public GameObject payButton;
     public GameObject restoreButton;
     public GameObject wipeButton;
+
+    [Header("Reset (after the ransomware): reinstall screen, then Restore your files")]
+    [Tooltip("Full-screen blue \"Resetting this PC\" screen.")]
+    public GameObject resetScreen;
+    public TextMeshProUGUI resetText;
+    [Tooltip("The ring of dots that spins while resetting.")]
+    public RectTransform resetSpinner;
+    [Tooltip("Window: restore the thesis from the USB drive or Goggle Drive.")]
+    public GameObject restoreWindow;
+    public TextMeshProUGUI restoreMessage;
+    [Tooltip("Restore buttons (Choose \"usb\" / \"cloud\"), and OK (Choose \"none\") when there is no backup.")]
+    public UnityEngine.UI.Button usbButton, cloudButton, noBackupButton;
+    public TextMeshProUGUI usbLabel, cloudLabel;
+    public GameObject restoreProgress;
+    public RectTransform restoreFill;
 
     // The id of the last button pressed (null = nothing pressed yet).
     public string Choice { get; private set; }
@@ -51,7 +73,7 @@ public class LaptopNight : MonoBehaviour
 
     public void ClearChoice() => Choice = null;
 
-    GameObject[] Pages => new[] { startPage, signUpPage, newPasswordPage, listingsPage, scamChatPage, orderPlacedPage, reportPage, reportSentPage };
+    GameObject[] Pages => new[] { startPage, signUpPage, newPasswordPage, listingsPage, productPage, scamChatPage, orderPlacedPage, reportPage, reportSentPage };
 
     // At night the Browser icon appears. The thesis icon disappears if the files were wiped without a backup.
     void OnEnable()
@@ -67,6 +89,8 @@ public class LaptopNight : MonoBehaviour
     {
         browser.SetActive(screen == browser);
         lockedFiles.SetActive(screen == lockedFiles);
+        if (resetScreen != null) resetScreen.SetActive(screen == resetScreen);
+        if (restoreWindow != null) restoreWindow.SetActive(screen == restoreWindow);
         ClearChoice();
     }
 

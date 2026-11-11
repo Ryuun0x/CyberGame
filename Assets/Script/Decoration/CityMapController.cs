@@ -3,11 +3,33 @@ using UnityEngine.UI;
 using System.Collections;
 using TMPro;
 
+/// <summary>
+/// The city map: the round minimap in the top-right corner (HUD) and the map screen on the phone.
+/// All of its UI is placed in the Hierarchy (CADSNET > Map > Place Map UI in Scene builds it once):
+///   UI > City Map HUD > Minimap > Clip > Map (+ PlayerArrow), Minimap > CafeMarker
+///   PhoneCanvas > PhoneFrame > CityMapScreen > Viewport (+ place pins and labels, PlayerArrow, CafeMarker)
+/// The positions of the arrows, pins, labels and the minimap are set here every frame; their size, colour and
+/// font can be changed in the Inspector.
+/// </summary>
 public class CityMapController : MonoBehaviour
 {
     public float minimapRange = 18f;
     public float minimumRange = 8f;
     public float maximumRange = 240f;
+    [Tooltip("Gap between the minimap and the top-right corner of the screen.")]
+    public float minimapMargin = 24f;
+
+    [Header("Placed map UI")]
+    public Canvas hud;
+    public RectTransform miniRoot, miniArrow, miniMarker;
+    public CityMapSurface miniImage;
+    public RectTransform expanded, fullArrow, fullMarker;
+    public CityMapSurface fullImage;
+    public CanvasGroup mapFade;
+    [Tooltip("One pin and one label per place in the map layout, in the same order.")]
+    public RectTransform[] placePins;
+    public TMP_Text[] placeLabels;
+
     public bool IsExpanded { get; private set; }
     public Vector2 MapPosition => IsIndoor ? layout.home : new Vector2(player.position.x, player.position.z);
     // No map inside the house: only the city scene has map artwork.
@@ -20,21 +42,12 @@ public class CityMapController : MonoBehaviour
     PhoneManager phone;
     PhoneHomeScreen home;
     Transform player;
-    RectTransform frame, expanded, viewport, miniRoot, miniArrow, fullArrow, hudRoot;
-    CityMapSurface miniImage, fullImage;
+    RectTransform frame, viewport;
     CityMapLayout layout;
-    TMP_Text[] placeLabels;
-    RectTransform[] placePins;
-    RectTransform miniMarker, fullMarker; // objective marker on the café
-    Sprite circleSprite, pinSprite;
-    CanvasGroup mapFade;
     Coroutine opening;
     public bool reduceMotion;
     public bool IsTransitioning => opening != null;
-    Texture2D arrowTexture;
-    Sprite arrowSprite;
     Button mapButton;
-    Canvas hud;
     Vector3 frameScale, framePosition;
     Quaternion frameRotation;
     GameObject[] portraitParts;
@@ -63,6 +76,11 @@ public class CityMapController : MonoBehaviour
         }
         layout = JsonUtility.FromJson<CityMapLayout>(asset.text);
         if (layout?.shapes == null || layout.places == null || layout.shapes.Length == 0) return false;
+        if (hud == null || expanded == null || placeLabels == null || placeLabels.Length != layout.places.Length)
+        {
+            Debug.LogError("[CityMap] The map UI isn't placed in this scene (or the places changed). Run CADSNET/Map/Place Map UI in Scene.", this);
+            return false;
+        }
         player = phone.firstPersonController != null ? phone.firstPersonController.transform : phone.transform;
         home.mapController = this;
         mapButton = home.transform.Find("MapApp")?.GetComponent<Button>();
@@ -71,78 +89,18 @@ public class CityMapController : MonoBehaviour
             mapButton.onClick.AddListener(home.OpenMap);
             mapButton.gameObject.SetActive(!IsIndoor);
         }
-        CreateArrow();
-        CreateMinimap();
-        CreatePhoneMap();
+        miniImage.layout = fullImage.layout = layout;
+        viewport = fullImage.rectTransform;
+        miniMarker.gameObject.SetActive(false);
+        fullMarker.gameObject.SetActive(false);
+        expanded.gameObject.SetActive(false);
+        portraitParts = new GameObject[frame.childCount - 1];
+        portraitStates = new bool[portraitParts.Length];
+        int index = 0;
+        foreach (Transform child in frame)
+            if (child != expanded) portraitParts[index++] = child.gameObject;
         initialized = true;
         return true;
-    }
-
-    void CreateArrow()
-    {
-        arrowTexture = new Texture2D(32, 32, TextureFormat.RGBA32, false);
-        arrowTexture.name = "Map Player Arrow";
-        var pixels = new Color[1024];
-        for (int y = 0; y < 32; y++)
-        for (int x = 0; x < 32; x++)
-        {
-            float dx = Mathf.Abs(x - 15.5f);
-            bool inside = y >= 3 && y < 30 && dx <= (30 - y) * 0.48f && y >= 3 + (1 - dx / 14f) * 7;
-            pixels[y * 32 + x] = inside ? Color.white : Color.clear;
-        }
-        arrowTexture.SetPixels(pixels);
-        arrowTexture.Apply();
-        arrowSprite = Sprite.Create(arrowTexture, new Rect(0, 0, 32, 32), Vector2.one * 0.5f);
-    }
-
-    void CreateMinimap()
-    {
-        var go = new GameObject("City Map HUD", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
-        hud = go.GetComponent<Canvas>();
-        hud.renderMode = RenderMode.ScreenSpaceOverlay;
-        hud.sortingOrder = 15;
-        hudRoot = (RectTransform)go.transform;
-        var scaler = go.GetComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920, 1080);
-        scaler.matchWidthOrHeight = 0.5f;
-        // Round minimap: a dark rim with the map clipped to a circle inside it.
-        circleSprite = UIBuild.Icon(256, (x, y) => x * x + y * y <= 1, Color.white);
-        pinSprite = UIBuild.Icon(64, IsPin, Color.white);
-        miniRoot = Panel("Minimap", hudRoot, new Vector2(226, 226), new Color(0.035f, 0.055f, 0.075f, 0.96f));
-        miniRoot.GetComponent<Image>().sprite = circleSprite;
-        miniRoot.anchorMin = miniRoot.anchorMax = miniRoot.pivot = Vector2.one; // top-right corner
-        var clip = Panel("Clip", miniRoot, new Vector2(210, 210), Color.white);
-        clip.GetComponent<Image>().sprite = circleSprite;
-        clip.gameObject.AddComponent<Mask>().showMaskGraphic = false;
-        miniImage = MapImage("Map", clip, new Vector2(210, 210), Vector2.zero);
-        miniArrow = Arrow(miniImage.rectTransform, 25);
-        miniMarker = Marker(miniRoot, 28); // outside the clip so it can sit on the rim when the café is far away
-        var click = miniRoot.gameObject.AddComponent<Button>();
-        click.onClick.AddListener(phone.OpenMap);
-    }
-
-    RectTransform Marker(Transform parent, float size)
-    {
-        var rect = Rect("CafeMarker", parent, new Vector2(size, size), Vector2.zero);
-        rect.pivot = new Vector2(0.5f, 0.05f); // the pin's tip marks the spot
-        var image = rect.gameObject.AddComponent<Image>();
-        image.sprite = pinSprite;
-        image.color = new Color(1f, 0.78f, 0.2f);
-        image.raycastTarget = false;
-        var outline = rect.gameObject.AddComponent<Outline>();
-        outline.effectColor = new Color(0.1f, 0.08f, 0.05f);
-        outline.effectDistance = new Vector2(1.5f, -1.5f);
-        rect.gameObject.SetActive(false);
-        return rect;
-    }
-
-    // Map pin: round head with a hole, tapering to a point at the bottom.
-    static bool IsPin(float x, float y)
-    {
-        float hx = x, hy = y - 0.3f, head = hx * hx + hy * hy;
-        bool tip = y < 0.3f && y > -0.95f && Mathf.Abs(x) < (y + 0.95f) * 0.52f;
-        return (head < 0.36f || tip) && head > 0.04f;
     }
 
     // The café marker guides the "head to the café" task and disappears once you're there.
@@ -150,41 +108,6 @@ public class CityMapController : MonoBehaviour
     {
         var gp = GameProgressManager.Instance;
         return !IsIndoor && gp != null && gp.thesisBackedUp && !gp.arrivedAtCafe;
-    }
-
-    void CreatePhoneMap()
-    {
-        expanded = Panel("CityMapScreen", frame, new Vector2(460, 246), new Color(0.035f, 0.055f, 0.075f));
-        expanded.localRotation = Quaternion.Euler(0, 0, 90);
-        fullImage = MapImage("Viewport", expanded, new Vector2(460, 246), Vector2.zero);
-        viewport = fullImage.rectTransform;
-
-        fullImage.gameObject.AddComponent<CityMapGesture>().map = this;
-        fullArrow = Arrow(viewport, 17);
-        fullMarker = Marker(viewport, 30);
-        mapFade = expanded.gameObject.AddComponent<CanvasGroup>();
-        placeLabels = new TMP_Text[layout.places.Length];
-        placePins = new RectTransform[layout.places.Length];
-        for (int i = 0; i < layout.places.Length; i++)
-        {
-            var place = layout.places[i];
-            placePins[i] = Panel(place.name + " pin", viewport, new Vector2(9, 9), new Color(0.91f, 0.53f, 0.29f));
-            placePins[i].GetComponent<Image>().raycastTarget = false;
-            placePins[i].localRotation = Quaternion.Euler(0, 0, 45);
-            placeLabels[i] = Label(place.name + " label", viewport, place.name.ToUpperInvariant(), new Vector2(76, 18), Vector2.zero, 12);
-            placeLabels[i].fontStyle = FontStyles.Bold;
-            placeLabels[i].color = new Color(0.12f, 0.21f, 0.22f);
-            var outline = placeLabels[i].gameObject.AddComponent<Outline>();
-            outline.effectColor = new Color(0.96f, 0.95f, 0.86f);
-            outline.effectDistance = new Vector2(1, -1);
-        }
-        fullArrow.SetAsLastSibling();
-        expanded.gameObject.SetActive(false);
-        portraitParts = new GameObject[frame.childCount - 1];
-        portraitStates = new bool[portraitParts.Length];
-        int index = 0;
-        foreach (Transform child in frame)
-            if (child != expanded) portraitParts[index++] = child.gameObject;
     }
 
     public void Open()
@@ -272,7 +195,7 @@ public class CityMapController : MonoBehaviour
         if (visible)
         {
             Rect safe = Screen.safeArea;
-            miniRoot.anchoredPosition = new Vector2((safe.xMax - Screen.width) / hud.scaleFactor - 24, (safe.yMax - Screen.height) / hud.scaleFactor - 24);
+            miniRoot.anchoredPosition = new Vector2((safe.xMax - Screen.width) / hud.scaleFactor - minimapMargin, (safe.yMax - Screen.height) / hud.scaleFactor - minimapMargin);
         }
         if (IsExpanded && opening == null) FitPhone();
         if (visible || IsExpanded) UpdateMap();
@@ -351,11 +274,15 @@ public class CityMapController : MonoBehaviour
         foreach (var place in layout.places) if (place.name == "Café") cafe = place.position;
         float pulse = 1 + 0.12f * Mathf.Sin(Time.unscaledTime * 4);
 
-        // Minimap: clamp to the rim so the pin always points toward the café.
+        // Minimap: on the map the pin stands upright on the café. Off the map it sits on the rim and turns so
+        // its tip points toward the café from where the player is (the pivot is the tip, so it stays on the rim).
         miniMarker.gameObject.SetActive(active);
         if (active)
         {
-            miniMarker.anchoredPosition = Vector2.ClampMagnitude(miniImage.Project(cafe), 96);
+            Vector2 toCafe = miniImage.Project(cafe);
+            bool offMap = toCafe.magnitude > MiniRim;
+            miniMarker.anchoredPosition = Vector2.ClampMagnitude(toCafe, MiniRim);
+            miniMarker.localRotation = offMap ? Quaternion.Euler(0, 0, Mathf.Atan2(toCafe.x, -toCafe.y) * Mathf.Rad2Deg) : Quaternion.identity;
             miniMarker.localScale = Vector3.one * pulse;
         }
         Vector2 point = fullImage.Project(cafe);
@@ -369,59 +296,11 @@ public class CityMapController : MonoBehaviour
         }
     }
 
+    const float MiniRim = 96f; // distance from the minimap's centre to its rim (UI units)
+
     static bool Inside(Vector2 point, Rect rect, float xMargin, float yMargin)
     {
         return Mathf.Abs(point.x) < rect.width * 0.5f - xMargin && Mathf.Abs(point.y) < rect.height * 0.5f - yMargin;
-    }
-
-    RectTransform Panel(string name, Transform parent, Vector2 size, Color color)
-    {
-        var rect = Rect(name, parent, size, Vector2.zero);
-        rect.gameObject.AddComponent<Image>().color = color;
-        return rect;
-    }
-
-    CityMapSurface MapImage(string name, Transform parent, Vector2 size, Vector2 position)
-    {
-        var image = Rect(name, parent, size, position).gameObject.AddComponent<CityMapSurface>();
-        image.layout = layout;
-        return image;
-    }
-
-    RectTransform Arrow(Transform parent, float size)
-    {
-        var rect = Rect("PlayerArrow", parent, Vector2.one * size, Vector2.zero);
-        var image = rect.gameObject.AddComponent<Image>();
-        image.sprite = arrowSprite;
-        image.color = new Color(0.2f, 1f, 0.87f);
-        image.raycastTarget = false;
-        var outline = rect.gameObject.AddComponent<Outline>();
-        outline.effectColor = new Color(0.01f, 0.06f, 0.08f);
-        outline.effectDistance = new Vector2(1.5f, -1.5f);
-        return rect;
-    }
-
-    static RectTransform Rect(string name, Transform parent, Vector2 size, Vector2 position)
-    {
-        var go = new GameObject(name, typeof(RectTransform));
-        go.layer = 5;
-        var rect = (RectTransform)go.transform;
-        rect.SetParent(parent, false);
-        rect.anchorMin = rect.anchorMax = rect.pivot = Vector2.one * 0.5f;
-        rect.sizeDelta = size;
-        rect.anchoredPosition = position;
-        return rect;
-    }
-
-    static TMP_Text Label(string name, Transform parent, string text, Vector2 size, Vector2 position, float fontSize)
-    {
-        var label = Rect(name, parent, size, position).gameObject.AddComponent<TextMeshProUGUI>();
-        label.text = text;
-        label.fontSize = fontSize;
-        label.color = new Color(0.83f, 0.95f, 0.96f);
-        label.alignment = TextAlignmentOptions.Center;
-        label.raycastTarget = false;
-        return label;
     }
 
     void OnDisable()
@@ -433,11 +312,5 @@ public class CityMapController : MonoBehaviour
     void OnDestroy()
     {
         if (mapButton != null && home != null) mapButton.onClick.RemoveListener(home.OpenMap);
-        if (hud != null) Destroy(hud.gameObject);
-        if (expanded != null) Destroy(expanded.gameObject);
-        if (arrowSprite != null) Destroy(arrowSprite);
-        if (arrowTexture != null) Destroy(arrowTexture);
-        foreach (var sprite in new[] { circleSprite, pinSprite })
-            if (sprite != null) { Destroy(sprite.texture); Destroy(sprite); }
     }
 }

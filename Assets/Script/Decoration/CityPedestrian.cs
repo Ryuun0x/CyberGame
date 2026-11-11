@@ -116,6 +116,6 @@ public class CityPedestrian : MonoBehaviour
         transform.position = next;
         transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(to), 8 * Time.deltaTime);
         anim.SetFloat("Speed", 0.5f * Mathf.Clamp01(pace / 0.6f), 0.15f, Time.deltaTime);
-        anim.speed = Mathf.Max(0.7f, pace / 1.4f);
+        anim.speed = Mathf.Max(0.7f, pace / (1.15f * anim.humanScale)); // the walk clip (Alice walk.anim) covers 1.15 m/s: feet match the ground
     }
 }

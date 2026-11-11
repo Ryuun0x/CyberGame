@@ -44,7 +44,9 @@ public class LaptopInteraction : MonoBehaviour, IInteractable
             return;
         }
 
-        if (_isUsingLaptop && !_isAnimating)
+        // (Not during the flash drive close-up: the camera is away from the screen.)
+        var port = GetComponent<LaptopUsbPort>();
+        if (_isUsingLaptop && !_isAnimating && !(port != null && port.Busy))
         {
             #if ENABLE_INPUT_SYSTEM
             if (Keyboard.current.escapeKey.wasPressedThisFrame)
@@ -65,6 +67,11 @@ public class LaptopInteraction : MonoBehaviour, IInteractable
 
     IEnumerator OpenLaptop()
     {
+        // Laptop hints go to the front of the line: first the mouse, then how to close it.
+        // (Added in reverse: each "now" hint goes in front of the one before.)
+        Hints.ShowUntil("laptop-close", "laptop", "Close laptop", $"Press {Hints.Cap("Esc")} to close the laptop",
+            () => UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame || !_isUsingLaptop, now: true);
+        Hints.ShowUntil("laptop-click", "mouse", "Laptop", "Click with the mouse to use apps and buttons", Hints.MouseClicked, now: true);
         _isUsingLaptop = true;
         _isAnimating = true;
 
@@ -141,8 +148,5 @@ public class LaptopInteraction : MonoBehaviour, IInteractable
         _isUsingLaptop = false;
         _isAnimating = false;
 
-        // Standing up after the upload: the stranger at the next table packs up and leaves.
-        if (GameProgressManager.Instance != null && GameProgressManager.Instance.thesisSubmitted)
-            CafeStranger.LeaveIfPresent();
     }
 }

@@ -18,7 +18,10 @@ public class NarrationManager : MonoBehaviour
     public float paddingY = 20f;
 
     [Header("Position")]
-    public float bottomOffset = 60f;
+    [Tooltip("Gap between the subtitle and the top of the hotbar (PhoneNotifications prefab).")]
+    public float bottomOffset = 12f;
+    [Tooltip("Height of the hotbar with its \"Tab\" label, as a part of the screen height (it scales with the screen).")]
+    public float hotbarHeight = 0.16f;
     public float maxWidth = 500f;
 
     void Awake()
@@ -72,7 +75,7 @@ public class NarrationManager : MonoBehaviour
         _boxRect.anchorMin = new Vector2(0.5f, 0f);
         _boxRect.anchorMax = new Vector2(0.5f, 0f);
         _boxRect.pivot = new Vector2(0.5f, 0f);
-        _boxRect.anchoredPosition = new Vector2(0, bottomOffset);
+        _boxRect.anchoredPosition = new Vector2(0, Screen.height * hotbarHeight / _canvas.scaleFactor + bottomOffset);
 
         // NOW show it - already correct size
         narrationBox.SetActive(true);

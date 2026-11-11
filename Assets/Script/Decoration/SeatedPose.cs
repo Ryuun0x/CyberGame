@@ -24,6 +24,10 @@ public class SeatedPose : MonoBehaviour
     [Range(-1, 1)] public float elbows = 0.1f;
     [Tooltip("Spine Front-Back. Positive leans forward.")]
     [Range(-1, 1)] public float lean = 0.05f;
+    [Tooltip("Head Nod Down-Up. Negative looks down (e.g. at a phone).")]
+    [Range(-1, 1)] public float headNod = -0.1f;
+    [Tooltip("How much the head slowly looks left and right while playing (0 = keeps still).")]
+    [Range(0, 1)] public float headLookAround = 0.25f;
     [Tooltip("Breathing and slow head movement while playing.")]
     public bool idleMotion = true;
 
@@ -88,8 +92,9 @@ public class SeatedPose : MonoBehaviour
         bool moving = Application.isPlaying && idleMotion;
         float t = Time.time + phase;
         SetOne("Spine Front-Back", lean + (moving ? Mathf.Sin(t * 1.3f) * 0.02f : 0));
-        SetOne("Head Turn Left-Right", moving ? Mathf.Sin(t * 0.23f) * 0.25f : 0);
-        SetOne("Head Nod Down-Up", -0.1f + (moving ? Mathf.Sin(t * 0.37f) * 0.05f : 0));
+        SetOne("Head Turn Left-Right", moving ? Mathf.Sin(t * 0.23f) * headLookAround : 0);
+        SetOne("Head Nod Down-Up", headNod + (moving ? Mathf.Sin(t * 0.37f) * 0.05f : 0));
+        SetOne("Neck Nod Down-Up", headNod * 0.5f); // the neck bends too, so looking down reads clearly
         handler.SetHumanPose(ref pose);
     }
 
@@ -112,10 +117,17 @@ public class SeatedPose : MonoBehaviour
         if (handler == null) return;
         var model = chair.GetComponentInChildren<Renderer>();
         var bounds = model != null ? model.bounds : new Bounds(chair.position, Vector3.zero);
-        Vector3 seat = new Vector3(bounds.center.x, bounds.min.y + SeatHeight + HipsAboveSeat, bounds.center.z);
+        SeatAt(new Vector3(bounds.center.x, bounds.min.y + SeatHeight, bounds.center.z), bounds.min.y, lookAt);
+    }
+
+    // Sit with the hips just above `seat` (a point on the seat surface), feet on `floorY`, facing lookAt.
+    public void SeatAt(Vector3 seatTop, float floorY, Vector3 lookAt)
+    {
+        if (handler == null) return;
+        Vector3 seat = seatTop + Vector3.up * HipsAboveSeat;
         Vector3 face = lookAt - seat;
         face.y = 0;
-        transform.SetPositionAndRotation(new Vector3(seat.x, bounds.min.y, seat.z),
+        transform.SetPositionAndRotation(new Vector3(seat.x, floorY, seat.z),
             face.sqrMagnitude > 0.001f ? Quaternion.LookRotation(face) : transform.rotation);
         bodyTurn = Quaternion.identity; // body faces the root's forward
         for (int i = 0; i < 4; i++)

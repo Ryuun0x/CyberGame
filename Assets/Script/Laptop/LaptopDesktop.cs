@@ -8,7 +8,6 @@ public class LaptopDesktop : MonoBehaviour
 {
     [Header("Windows")]
     public GameObject thesisWindow;
-    public GameObject noInternetPopup; // Build later, leave empty for now
 
     [Header("Backup")]
     [Tooltip("The backup button inside the thesis window — hidden until flash drive is found")]
@@ -19,11 +18,24 @@ public class LaptopDesktop : MonoBehaviour
     public GameObject pdfIcon;
     public GameObject noInternetIcon;
 
+    [Header("Backups")]
+    [Tooltip("\"Copying...\" dialog shown while the thesis is copied to the flash drive.")]
+    public GameObject copyDialog;
+    public RectTransform copyFill;
+    [Tooltip("The Save to Drive button in the thesis window.")]
+    public GameObject driveButton;
+
     [Header("WiFi Tooltip")]
     public GameObject wifiTooltip;
     public TextMeshProUGUI tooltipStatus;
     private bool _tooltipVisible = false;
 
+
+    [Header("Café only (leave empty on the house laptop)")]
+    [Tooltip("The café laptop's own Wi-Fi list and fake sign-in page.")]
+    public LaptopWifi wifi;
+    [Tooltip("The fake browser update popup.")]
+    public FakeUpdateBanner updateBanner;
 
     [Header("Settings")]
     public float internetLostDelay = 2f;
@@ -31,8 +43,6 @@ public class LaptopDesktop : MonoBehaviour
     private bool _hasInternet = true;
     private bool _thesisOpen = false;
     private bool _chapterEnding = false;
-    private LaptopWifi _wifi; // café only: the laptop picks its own network
-    private FakeUpdateBanner _updateBanner;
 
     public string chapterTitle = "Chapter 1: The Deadline";
     public string nextChapterTitle = "Chapter 2"; // title card shown after the debrief
@@ -42,8 +52,6 @@ public class LaptopDesktop : MonoBehaviour
         // Hide everything on boot
         if (thesisWindow != null)
             thesisWindow.SetActive(false);
-        if (noInternetPopup != null)
-            noInternetPopup.SetActive(false);
         if (pdfIcon != null)
             pdfIcon.SetActive(false);
         if (noInternetIcon != null)
@@ -55,8 +63,6 @@ public class LaptopDesktop : MonoBehaviour
 
         _hasInternet = true;
 
-        if (SceneManager.GetActiveScene().name != "Interior")
-            _wifi = gameObject.AddComponent<LaptopWifi>();
     }
 
     void Update()
@@ -66,21 +72,43 @@ public class LaptopDesktop : MonoBehaviour
             timeText.text = System.DateTime.Now.ToString("h:mm tt");
 
         // Café: the 'No Internet' X follows the laptop's own connection
-        if (_wifi != null && noInternetIcon != null)
-            noInternetIcon.SetActive(!_wifi.HasInternet);
+        if (wifi != null && noInternetIcon != null)
+            noInternetIcon.SetActive(!wifi.HasInternet);
 
-        // Café: once online (any network) with the thesis open, the page pushes a fake update. Once only.
-        if (_thesisOpen && _wifi != null && _wifi.HasInternet && _updateBanner == null)
-            _updateBanner = gameObject.AddComponent<FakeUpdateBanner>();
+    }
+
+    // Can the laptop reach the internet? At home the Wi-Fi is down all morning; at the café it depends on
+    // which network the laptop joined.
+    public bool HasInternet => wifi != null && wifi.HasInternet;
+
+    // ThesisSubmit: the browser loaded with no internet (the offline page is showing).
+    bool _triedOffline;
+    public void TriedToSendOffline()
+    {
+        if (wifi != null)
+        {
+            StartCoroutine(PlayCafeNoWifiNarration());
+            return;
+        }
+        if (_triedOffline) return; // the frustration lines play once
+        _triedOffline = true;
+        if (GameProgressManager.Instance != null) GameProgressManager.Instance.MarkTriedSubmit();
+        StartCoroutine(PlayFrustrationNarration());
+    }
+
+    // ThesisSubmit: the mail page loaded online. At the café that web page pushes a fake browser update.
+    public void MailPageLoaded()
+    {
+        if (updateBanner != null) updateBanner.Show();
     }
 
     // Called when WifiIcon is clicked
     public void ToggleWifiTooltip()
     {
         // Café: the Wi-Fi icon opens the laptop's network list instead of the status tooltip
-        if (_wifi != null)
+        if (wifi != null)
         {
-            _wifi.ToggleList();
+            wifi.ToggleList();
             return;
         }
 
@@ -104,7 +132,11 @@ public class LaptopDesktop : MonoBehaviour
     // Called when ThesisIcon is clicked
     public void OpenThesis()
     {
-        if (_thesisOpen) return;
+        if (_thesisOpen)
+        {
+            thesisWindow.transform.SetAsLastSibling(); // already open (maybe behind the browser): bring it to the front
+            return;
+        }
         // Chapter 2: the thesis was already submitted; the Chapter 1 thesis / no-internet flow must not replay.
         if (GameProgressManager.Instance != null && GameProgressManager.Instance.chapter >= 2)
         {
@@ -113,9 +145,12 @@ public class LaptopDesktop : MonoBehaviour
         }
         _thesisOpen = true;
 
-        // Show thesis window
+        // Show thesis window, in front of any other window (e.g. the browser)
         if (thesisWindow != null)
+        {
             thesisWindow.SetActive(true);
+            thesisWindow.transform.SetAsLastSibling();
+        }
 
         // Show PDF icon in taskbar (app is now "open")
         if (pdfIcon != null)
@@ -141,7 +176,7 @@ public class LaptopDesktop : MonoBehaviour
             pdfIcon.SetActive(false);
     }
 
-    // Called by Submit button in BottomBar
+    // Called by ThesisSubmit once the mail with the thesis is sent (only possible online, i.e. at the café).
     public void SubmitThesis()
     {
         bool isInterior = SceneManager.GetActiveScene().name == "Interior"; // Adjust if your interior scene is named differently
@@ -152,12 +187,13 @@ public class LaptopDesktop : MonoBehaviour
 
             // ── CAFE LOGIC: any working connection uploads the same way ──
             // The evil twin was already recorded when the player chose a network; nothing here gives it away.
-            if (_wifi != null && _wifi.HasInternet)
+            if (wifi != null && wifi.HasInternet)
             {
-                Debug.Log("Thesis submitted via " + _wifi.Network);
+                Debug.Log("Thesis submitted via " + wifi.Network);
                 _chapterEnding = true;
-                if (_updateBanner != null) _updateBanner.Dismiss(); // ignored it: that's the safe choice
+                if (updateBanner != null && updateBanner.Shown) updateBanner.Dismiss(); // ignored it: that's the safe choice
                 if (GameProgressManager.Instance != null) GameProgressManager.Instance.SubmitThesis(); // unlocks the café exit
+                CafeStranger.LeaveIfPresent(); // the stranger packs up right away, well before she does
                 StartCoroutine(PlayCafeSuccessNarration());
                 CloseThesis();
             }
@@ -169,41 +205,14 @@ public class LaptopDesktop : MonoBehaviour
             return;
         }
 
-        // ── INTERIOR LOGIC (Old Behavior) ──
-        if (_hasInternet)
-        {
-            // Internet still up (unlikely with 2s delay)
-            Debug.Log("Thesis submitted successfully!");
-            CloseThesis();
-        }
-        else
-        {
-            // No internet — show error popup
-            Debug.Log("No internet connection!");
-
-            // Track that the player tried to submit
-            if (GameProgressManager.Instance != null)
-                GameProgressManager.Instance.MarkTriedSubmit();
-
-            // Frustration & Hint Narration (Sequential)
-            StartCoroutine(PlayFrustrationNarration());
-
-            if (noInternetPopup != null)
-            {
-                noInternetPopup.SetActive(true);
-            }
-            else
-            {
-                // Popup not built yet — just log for now
-                Debug.LogWarning("No Internet Popup UI not assigned yet.");
-            }
-        }
+        // Home: there is no internet, so sending can't happen here.
+        TriedToSendOffline();
     }
 
     // ── NEW: Backup Logic ──────────────────────────────────
 
     /// <summary>
-    /// Shows the backup button only if the player has the flash drive
+    /// Shows the backup button only while the flash drive is plugged in (LaptopUsbPort)
     /// and the thesis hasn't been backed up yet.
     /// </summary>
     public void RefreshBackupButton()
@@ -211,10 +220,12 @@ public class LaptopDesktop : MonoBehaviour
         if (backupButton == null) return;
 
         bool showBackup = GameProgressManager.Instance != null
-                          && GameProgressManager.Instance.hasFlashDrive
+                          && GameProgressManager.Instance.flashDriveInserted
                           && !GameProgressManager.Instance.thesisBackedUp;
 
         backupButton.SetActive(showBackup);
+        if (driveButton != null)
+            driveButton.SetActive(GameProgressManager.Instance == null || !GameProgressManager.Instance.thesisInCloud);
     }
 
     /// <summary>
@@ -225,30 +236,63 @@ public class LaptopDesktop : MonoBehaviour
     {
         if (GameProgressManager.Instance == null) return;
 
-        if (!GameProgressManager.Instance.hasFlashDrive)
+        if (!GameProgressManager.Instance.flashDriveInserted)
         {
-            Debug.LogWarning("No flash drive — cannot backup!");
+            Debug.LogWarning("Flash drive not plugged in — cannot backup!");
             return;
         }
 
-        // Register backup in game progress
+        if (_copying) return;
+        StartCoroutine(CopyToUsb());
+    }
+
+    // "Copying Thesis_Final.pdf to USB Drive (E:)" with a progress bar, then the backup counts.
+    bool _copying;
+    public bool Copying => _copying; // UsbTray won't eject mid-copy
+    IEnumerator CopyToUsb()
+    {
+        _copying = true;
+        if (backupButton != null) backupButton.SetActive(false);
+        if (copyDialog != null)
+        {
+            copyDialog.SetActive(true);
+            copyDialog.transform.SetAsLastSibling();
+            for (float t = 0; t < 1; t += Time.unscaledDeltaTime / 2.5f)
+            {
+                copyFill.anchorMax = new Vector2(t, 1);
+                yield return null;
+            }
+            copyFill.anchorMax = Vector2.one;
+            yield return new WaitForSecondsRealtime(0.4f);
+            copyDialog.SetActive(false);
+        }
+        _copying = false;
+
         GameProgressManager.Instance.BackupThesis();
-
-        // Hide backup button (already backed up)
-        if (backupButton != null)
-            backupButton.SetActive(false);
-
-        // ── NEW: 2FA / Cafe Prompt Narration ───────────────────────
+        // A hint, never required: the school's email in the phone's Mail app asks students to turn on 2FA.
+        GameProgressManager.Instance.mailUnread = true;
+        PhoneNotifications.Show("Mail", "School IT Office: Protect your Goggle account");
         StartCoroutine(PlayBackupNarration());
-
         Debug.Log("Thesis backed up to flash drive!");
     }
 
-    // Called by OK/Close button on the no internet popup (wire up later)
-    public void CloseNoInternetPopup()
+    // ThesisSubmit: Save to Drive was clicked with no internet.
+    bool _driveOfflineSaid;
+    public void TriedDriveOffline()
     {
-        if (noInternetPopup != null)
-            noInternetPopup.SetActive(false);
+        if (_driveOfflineSaid || NarrationManager.Instance == null) return;
+        _driveOfflineSaid = true;
+        NarrationManager.Instance.Show("No internet, so it can't upload. I'll save it to my Drive once I'm online.", 4f);
+    }
+
+    // ThesisSubmit: the thesis finished uploading to Drive.
+    public void DriveSaved()
+    {
+        if (GameProgressManager.Instance != null) GameProgressManager.Instance.thesisInCloud = true;
+        if (driveButton != null) driveButton.SetActive(false);
+        bool usb = GameProgressManager.Instance != null && GameProgressManager.Instance.thesisBackedUp;
+        if (NarrationManager.Instance != null)
+            NarrationManager.Instance.Show(usb ? "Saved to my Drive too. Two backups, in two places." : "Saved to my Drive. At least there's a copy now.", 3.5f);
     }
 
     IEnumerator LoseInternetAfterDelay()
@@ -298,6 +342,9 @@ public class LaptopDesktop : MonoBehaviour
             NarrationManager.Instance.Show("Phew, thesis is backed up.", 3f);
             yield return new WaitForSecondsRealtime(3.5f);
             NarrationManager.Instance.Show("I could turn on 2FA on my phone too, before heading out.", 4f);
+            // The phone hint comes with this line, when the phone first matters.
+            yield return new WaitForSecondsRealtime(1f);
+            Hints.Show("phone", "phone", "Phone", $"Press {Hints.Cap("TAB")} to open your phone", UnityEngine.InputSystem.Key.Tab);
         }
         else
         {
@@ -327,7 +374,10 @@ public class LaptopDesktop : MonoBehaviour
         var gp = GameProgressManager.Instance;
         if (ThreatLog.Instance != null && gp != null)
         {
-            ThreatLog.Instance.Record("backup", gp.thesisBackedUp);
+            // Both copies (USB + Drive) = Safe; only one = Recovered (partly done); none = Compromised.
+            bool usb = gp.thesisBackedUp, cloud = gp.thesisInCloud;
+            if (usb != cloud) ThreatLog.Instance.MarkExposed("backup");
+            ThreatLog.Instance.Record("backup", usb || cloud);
             ThreatLog.Instance.Record("mfa", gp.is2FAEnabled);
             // Paid off in Chapter 2: the stolen login gets used; the "update" locks the files.
             if (gp.credentialsStolen) ThreatLog.Instance.MarkPending("login_alert");

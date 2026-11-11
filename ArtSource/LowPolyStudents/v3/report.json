@@ -1,0 +1,143 @@
+{
+ "triangles": {
+  "Male_Body": 802,
+  "Male_Hair": 882,
+  "Male_Casual_Clothes": 2432,
+  "Male_Student_Clothes": 2412
+ },
+ "clips": {
+  "Idle": {
+   "frames": 105,
+   "seconds": 3.5,
+   "ik_miss_m": 0.0
+  },
+  "Walk": {
+   "frames": 30,
+   "seconds": 1.0,
+   "ik_miss_m": 0.0035
+  },
+  "Run": {
+   "frames": 22,
+   "seconds": 0.733,
+   "ik_miss_m": 0.0116
+  }
+ },
+ "glb": {
+  "Casual": {
+   "file": "Male_Casual.glb",
+   "size_kb": 500,
+   "armatures": 1,
+   "bones": 22,
+   "meshes": {
+    "Male_Body.001": {
+     "tris": 802,
+     "skinned": true,
+     "groups": 22,
+     "mats": [
+      "Face.001",
+      "Skin.001"
+     ]
+    },
+    "Male_Casual_Clothes.001": {
+     "tris": 2432,
+     "skinned": true,
+     "groups": 22,
+     "mats": [
+      "Pixel_Casual_Clothes.001"
+     ]
+    },
+    "Male_Hair.001": {
+     "tris": 882,
+     "skinned": true,
+     "groups": 22,
+     "mats": [
+      "Pixel_Hair.001"
+     ]
+    }
+   },
+   "images": [
+    "Face_Skin",
+    "Pixel_Casual_Clothes",
+    "Pixel_Hair"
+   ],
+   "clips": {
+    "Idle": {
+     "frames": 105,
+     "seconds": 3.5,
+     "animated_channels": 53,
+     "loop_seam_max_delta": 0.0
+    },
+    "Run": {
+     "frames": 22,
+     "seconds": 0.733,
+     "animated_channels": 62,
+     "loop_seam_max_delta": 0.0
+    },
+    "Walk": {
+     "frames": 30,
+     "seconds": 1.0,
+     "animated_channels": 61,
+     "loop_seam_max_delta": 0.0
+    }
+   }
+  },
+  "Student": {
+   "file": "Male_Student.glb",
+   "size_kb": 497,
+   "armatures": 1,
+   "bones": 22,
+   "meshes": {
+    "Male_Body.001": {
+     "tris": 802,
+     "skinned": true,
+     "groups": 22,
+     "mats": [
+      "Face.001",
+      "Skin.001"
+     ]
+    },
+    "Male_Hair.001": {
+     "tris": 882,
+     "skinned": true,
+     "groups": 22,
+     "mats": [
+      "Pixel_Hair.001"
+     ]
+    },
+    "Male_Student_Clothes.001": {
+     "tris": 2412,
+     "skinned": true,
+     "groups": 22,
+     "mats": [
+      "Pixel_Student_Clothes.001"
+     ]
+    }
+   },
+   "images": [
+    "Face_Skin",
+    "Pixel_Hair",
+    "Pixel_Student_Clothes"
+   ],
+   "clips": {
+    "Idle": {
+     "frames": 105,
+     "seconds": 3.5,
+     "animated_channels": 53,
+     "loop_seam_max_delta": 0.0
+    },
+    "Run": {
+     "frames": 22,
+     "seconds": 0.733,
+     "animated_channels": 62,
+     "loop_seam_max_delta": 0.0
+    },
+    "Walk": {
+     "frames": 30,
+     "seconds": 1.0,
+     "animated_channels": 61,
+     "loop_seam_max_delta": 0.0
+    }
+   }
+  }
+ }
+}

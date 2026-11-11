@@ -4,7 +4,7 @@ using UnityEngine.UI;
 [RequireComponent(typeof(CanvasRenderer))]
 public class CityMapSurface : MaskableGraphic
 {
-    public CityMapLayout layout;
+    [System.NonSerialized] public CityMapLayout layout; // set by CityMapController at runtime (from Resources/CityMapLayout)
     public Vector2 Center { get; private set; }
     public float Range { get; private set; }
     Texture2D artwork;

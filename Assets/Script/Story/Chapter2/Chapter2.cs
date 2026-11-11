@@ -14,16 +14,18 @@ using static StoryTools;
 //   6. BedtimeBeat      - go to bed, the epilogue ("Two weeks later..."), the final results
 public class Chapter2 : MonoBehaviour
 {
-    // Standing at the desk, facing the laptop.
+    // Standing near the desk, facing it (the laptop on it), so the night starts looking at the table, not a wall.
     static readonly Vector3 DeskSpot = new Vector3(-10.0f, -4.28f, 2.78f);
-    const float DeskYaw = 270;
 
     public void Begin(GameObject player)
     {
         var controller = player.GetComponentInChildren<CharacterController>();
         if (controller != null) controller.enabled = false;
         var body = controller != null ? controller.transform : player.transform;
-        body.SetPositionAndRotation(DeskSpot, Quaternion.Euler(0, DeskYaw, 0));
+        var laptop = FindFirstObjectByType<LaptopCarry>(FindObjectsInactive.Include);
+        Vector3 toDesk = laptop != null ? laptop.transform.position - DeskSpot : Vector3.back;
+        toDesk.y = 0;
+        body.SetPositionAndRotation(DeskSpot, Quaternion.LookRotation(toDesk));
         if (controller != null) controller.enabled = true;
         Night();
         StartCoroutine(Story());
@@ -31,6 +33,18 @@ public class Chapter2 : MonoBehaviour
 
     IEnumerator Story()
     {
+        // Back home after the café: black screen, a time card, then the room fades in
+        // (going straight from the café to the bedroom felt like a teleport).
+        var wake = GetComponent<WakeUpSequence>();
+        wake.StopAllCoroutines(); // its default fade-in; this beat fades in itself
+        var fader = ScreenFader.Instance;
+        fader.SetBlack();
+        var walking = FindFirstObjectByType<StarterAssets.FirstPersonController>();
+        if (walking != null) walking.enabled = false;
+        if (wake.prologue != null) yield return wake.prologue.ShowTimeCard("11:40 PM", "THAT NIGHT · BACK HOME", 2f);
+        yield return fader.FadeTo(0f, 1.5f);
+        if (walking != null) walking.enabled = true;
+
         yield return Wait(1.5f);
         Say("It's late... I can't sleep. Big exam tomorrow too.", 3.5f);
         yield return Wait(4.5f);

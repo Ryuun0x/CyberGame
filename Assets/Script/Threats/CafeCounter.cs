@@ -1,33 +1,123 @@
-using TMPro;
+using System.Collections;
+using StarterAssets;
 using UnityEngine;
-using UnityEngine.UI;
-#if ENABLE_INPUT_SYSTEM
-using UnityEngine.InputSystem;
-#endif
 
 // Café counter: ordering a drink hands over a receipt printed with the real Wi-Fi name and password.
+// The first order takes a moment: while the drink is made, the camera pans slowly to the hooded stranger at his
+// laptop (a hint that someone in here is up to something; no logo is shown), then back, and the receipt appears.
 // Needs a Collider (for the interaction raycast) and optionally an InteractableLabel.
 public class CafeCounter : MonoBehaviour, IInteractable
 {
     public const string WifiName = "CafeWifi67";
     public const string WifiPassword = "brew2026";
 
+    [Tooltip("The receipt overlay (CafeReceipt object in the UI category).")]
+    public CafeReceipt receipt;
+
+    [Header("Waiting for the order")]
+    [Tooltip("Camera for the pan (the city's cutscene camera, off until used).")]
+    public Camera panCamera;
+    [Tooltip("The black bars (UI > CityArrivalLetterbox).")]
+    public CanvasGroup letterbox;
+    [Tooltip("Who the camera pans to: the stranger.")]
+    public Transform suspect;
+    public float panSeconds = 4.5f, holdSeconds = 3f;
+
+    public static bool Waiting { get; private set; }
+
     void Start() => UpdatePrompt();
 
     public void Interact()
     {
-        // The E press that puts the receipt away must not reopen it (Destroy lands at end of frame, so IsOpen still holds).
-        if (CafeReceipt.IsOpen) return;
+        // The E press that puts the receipt away must not reopen it.
+        if (CafeReceipt.IsOpen || Waiting) return;
 
         var gp = GameProgressManager.Instance;
         if (gp != null && !gp.hasReceipt)
         {
-            gp.OrderDrink();
-            if (NarrationManager.Instance != null)
-                NarrationManager.Instance.Show("One iced latte, please. ...Oh, the Wi-Fi password is on the receipt.", 4f);
+            StartCoroutine(OrderAndWait(gp));
+            return;
         }
-        CafeReceipt.Show();
+        receipt.Show();
         UpdatePrompt();
+    }
+
+    IEnumerator OrderAndWait(GameProgressManager gp)
+    {
+        var player = FindFirstObjectByType<FirstPersonController>();
+        var view = Camera.main;
+        if (panCamera == null || suspect == null || player == null || view == null)
+        {
+            Served(gp); // nothing to film: just hand over the receipt
+            yield break;
+        }
+
+        Waiting = true;
+        player.enabled = false;
+        ShowCrosshair(false);
+        Say("One iced latte, please.", 2.2f);
+        yield return Wait(2.2f);
+        Say("Barista: Coming right up! It'll be a few minutes.", 2.6f);
+
+        // From her own view, turn slowly toward the stranger's head and drift a little closer.
+        Transform cam = panCamera.transform;
+        Vector3 fromPosition = view.transform.position;
+        Quaternion fromRotation = view.transform.rotation;
+        Vector3 head = suspect.position + Vector3.up * 1.15f;
+        Vector3 toPosition = Vector3.Lerp(fromPosition, head, 0.15f);
+        Quaternion toRotation = Quaternion.LookRotation(head - toPosition);
+        cam.SetPositionAndRotation(fromPosition, fromRotation);
+        panCamera.enabled = true;
+        for (float t = 0; t < 1; t += Time.deltaTime / panSeconds)
+        {
+            float s = Mathf.SmoothStep(0, 1, t);
+            cam.SetPositionAndRotation(Vector3.Lerp(fromPosition, toPosition, s), Quaternion.Slerp(fromRotation, toRotation, s));
+            if (letterbox != null) letterbox.alpha = Mathf.Min(1, t * 3);
+            yield return null;
+        }
+        Say("...That guy in the hoodie hasn't looked up from his laptop since I walked in.", holdSeconds);
+        yield return Wait(holdSeconds);
+
+        Say("Barista: Iced latte for Alice! The Wi-Fi password's on your receipt.", 3f);
+        for (float t = 0; t < 1; t += Time.deltaTime / 1f)
+        {
+            float s = Mathf.SmoothStep(0, 1, t);
+            cam.SetPositionAndRotation(Vector3.Lerp(toPosition, fromPosition, s), Quaternion.Slerp(toRotation, fromRotation, s));
+            if (letterbox != null) letterbox.alpha = 1 - s;
+            yield return null;
+        }
+        if (letterbox != null) letterbox.alpha = 0;
+        panCamera.enabled = false;
+        player.enabled = true;
+        ShowCrosshair(true);
+        Waiting = false;
+        Served(gp);
+    }
+
+    void Served(GameProgressManager gp)
+    {
+        if (gp != null && !gp.hasReceipt) gp.OrderDrink();
+        receipt.Show();
+        UpdatePrompt();
+    }
+
+    // Editor checks only: order and get the receipt without the wait.
+    public void ServeNow() => Served(GameProgressManager.Instance);
+
+    static void Say(string line, float seconds)
+    {
+        if (NarrationManager.Instance != null) NarrationManager.Instance.Show(line, seconds);
+    }
+
+    static IEnumerator Wait(float seconds)
+    {
+        for (float t = 0; t < seconds; t += Time.deltaTime) yield return null;
+    }
+
+    static void ShowCrosshair(bool show)
+    {
+        var crosshair = FindFirstObjectByType<RaycastCrosshair>(FindObjectsInactive.Include);
+        if (crosshair != null && crosshair.crosshairDot != null) crosshair.crosshairDot.gameObject.SetActive(show);
     }
 
     void UpdatePrompt()
@@ -36,68 +126,6 @@ public class CafeCounter : MonoBehaviour, IInteractable
         bool ordered = GameProgressManager.Instance != null && GameProgressManager.Instance.hasReceipt;
         if (label != null) label.promptText = ordered ? "View Receipt" : "Order a Drink";
     }
-}
 
-public class CafeReceipt : MonoBehaviour
-{
-    public static bool IsOpen => _current != null;
-    static CafeReceipt _current;
-    int _openedFrame;
-
-    public static void Show()
-    {
-        if (_current != null) return;
-        _current = new GameObject("CafeReceipt").AddComponent<CafeReceipt>();
-        _current.Build();
-    }
-
-    void Build()
-    {
-        _openedFrame = Time.frameCount;
-        UIBuild.Overlay(gameObject, 420);
-        var ink = new Color(0.16f, 0.15f, 0.14f);
-
-        var paper = UIBuild.NewRect("Receipt", transform);
-        paper.anchorMin = paper.anchorMax = new Vector2(0.5f, 0.5f);
-        paper.sizeDelta = new Vector2(600, 0);
-        paper.localRotation = Quaternion.Euler(0, 0, -2);
-        paper.gameObject.AddComponent<Image>().color = new Color(0.98f, 0.97f, 0.93f);
-        UIBuild.Column(paper, 40, 10);
-        paper.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-        Line(paper, "CAFÉ 67", 40, ink, FontStyles.Bold);
-        Line(paper, "Order #067  ·  " + System.DateTime.Now.ToString("h:mm tt"), 20, ink, FontStyles.Normal);
-        Line(paper, "- - - - - - - - - - - - - - - - - - -", 20, ink, FontStyles.Normal);
-        var item = Line(paper, "1  Iced Latte<pos=80%>4.50", 26, ink, FontStyles.Normal);
-        item.alignment = TextAlignmentOptions.Left;
-        var total = Line(paper, "<b>TOTAL</b><pos=80%><b>4.50</b>", 26, ink, FontStyles.Normal);
-        total.alignment = TextAlignmentOptions.Left;
-        Line(paper, "- - - - - - - - - - - - - - - - - - -", 20, ink, FontStyles.Normal);
-        Line(paper, $"WiFi: <b>{CafeCounter.WifiName}</b>  |  Password: <b>{CafeCounter.WifiPassword}</b>", 22, ink, FontStyles.Normal);
-        Line(paper, "Thank you! Come again.", 22, ink, FontStyles.Italic);
-        Line(paper, "[E] Put away", 18, new Color(0.45f, 0.44f, 0.42f), FontStyles.Normal);
-    }
-
-    static TextMeshProUGUI Line(RectTransform parent, string text, float size, Color color, FontStyles style)
-    {
-        var label = UIBuild.Label(parent, text, size, color, style);
-        label.alignment = TextAlignmentOptions.Center;
-        return label;
-    }
-
-    void Update()
-    {
-        if (Time.frameCount == _openedFrame) return; // ignore the E press that opened it
-#if ENABLE_INPUT_SYSTEM
-        bool close = Keyboard.current != null && (Keyboard.current.eKey.wasPressedThisFrame || Keyboard.current.escapeKey.wasPressedThisFrame);
-#else
-        bool close = Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Escape);
-#endif
-        if (close) Destroy(gameObject);
-    }
-
-    void OnDestroy()
-    {
-        if (_current == this) _current = null;
-    }
+    void OnDestroy() => Waiting = false;
 }

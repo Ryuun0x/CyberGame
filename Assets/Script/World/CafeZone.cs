@@ -4,9 +4,8 @@ public class CafeZone : MonoBehaviour
 {
     public static bool PlayerInCafe = false;
 
-    CafeEnding ending;
-
-    void Awake() => ending = gameObject.AddComponent<CafeEnding>();
+    [Tooltip("The CafeEnding component on this object (blocks the exit until the thesis is submitted, then ends Chapter 1).")]
+    public CafeEnding ending;
 
     void OnTriggerEnter(Collider other)
     {

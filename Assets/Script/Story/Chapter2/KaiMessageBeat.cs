@@ -10,7 +10,8 @@ public static class KaiMessageBeat
 {
     public static IEnumerator Play()
     {
-        var phone = OpenPhone();
+        yield return PickUpPhone("Kai", "Bes, emergency. Can you send ₱1,000?");
+        var phone = StoryPhone;
         var home = PhoneHome;
         home.OpenChat("Kai");
         home.AddChat("Bes, emergency. Can you send ₱1,000 to 0917-xxx-xxxx? I'll pay you back tomorrow, please hurry.", false);
