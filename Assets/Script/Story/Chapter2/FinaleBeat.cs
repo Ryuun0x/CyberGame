@@ -13,10 +13,10 @@ public static class FinaleBeat
 
         // The seller clue only shows if the player opened the scam seller's chat.
         laptop.sellerClue.SetActive(Progress.sawGhostlineSeller);
-        laptop.OpenPage(laptop.reportPage, "Report a Cybercrime");
+        laptop.OpenPage(laptop.reportPage, "cicc.gov.ph/report");
         yield return WaitForLaptopChoice("send");
 
-        laptop.OpenPage(laptop.reportSentPage, "Report a Cybercrime > Received");
+        laptop.OpenPage(laptop.reportSentPage, "cicc.gov.ph/report/received");
         CompleteObjective(2);
         ConsequenceToast.Show();
         yield return Wait(3f);

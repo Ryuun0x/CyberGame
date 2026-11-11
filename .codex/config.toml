@@ -1,0 +1,20 @@
+[mcp_servers.UnityMCP]
+command = 'C:\Users\pajar\.local\bin\uvx.exe'
+args = [
+    "--offline",
+    "--from",
+    "mcpforunityserver==10.0.0",
+    "mcp-for-unity",
+]
+
+[mcp_servers.meshy]
+command = "cmd"
+args = [
+    "/c",
+    "npx",
+    "-y",
+    "@meshy-ai/meshy-mcp-server",
+]
+
+[mcp_servers.meshy.env]
+MESHY_API_KEY = "msy_ROzsssTFRKyGs7NnVoSUww5m8BKbUFzLMzkq"

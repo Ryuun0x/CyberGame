@@ -2,6 +2,7 @@ using StarterAssets;
 using System.Collections;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class WakeUpSequence : MonoBehaviour
 {
@@ -32,6 +33,17 @@ public class WakeUpSequence : MonoBehaviour
     public float blinkSpeed = 0.3f;
     public float pauseBeforeSequence = 2f;
 
+    // True while the opening (prologue + wake-up cinematic) plays; the objectives wait for it.
+    public static bool Playing { get; private set; }
+
+    [Header("Prologue")]
+    [Tooltip("The Prologue component on this object: the night before (Kai's messages, Ghostline). Plays before the wake-up.")]
+    public Prologue prologue;
+
+    [Header("Chapter 2")]
+    [Tooltip("The Chapter2 component on this object; it runs the night story when GameProgressManager.chapter == 2.")]
+    public Chapter2 chapter2;
+
     [Header("Spawn Points")]
     public Transform spawnBed;
     public Transform spawnDoor;
@@ -40,12 +52,13 @@ public class WakeUpSequence : MonoBehaviour
     private string[] _dialogueLines = new string[]
     {
         "Ugh... my head.",
-        "I was up all night finishing that thesis...",
-        "It's due today! I better check my laptop and submit it right now."
+        "Kai... I hope they're okay.",
+        "Wait, it's already nine?! The thesis is due at noon. I need to submit it now."
     };
 
     void Start()
     {
+        Playing = false; // reset in case a previous Play session stopped mid-opening
         cinematicCamera.enabled = true;
         playerCamera.enabled = false;
         player.SetActive(false);
@@ -57,7 +70,7 @@ public class WakeUpSequence : MonoBehaviour
         if (GameProgressManager.Instance != null && GameProgressManager.Instance.chapter == 2)
         {
             SkipToFPS();
-            gameObject.AddComponent<Chapter2>().Begin(player);
+            chapter2.Begin(player);
             return;
         }
 
@@ -113,15 +126,26 @@ public class WakeUpSequence : MonoBehaviour
 
     IEnumerator PlayWakeUpSequence()
     {
-        yield return StartCoroutine(Blink());
-        yield return new WaitForSeconds(pauseBeforeSequence);
-        yield return StartCoroutine(LookAround());
-        yield return StartCoroutine(SitUp());
-        yield return new WaitForSeconds(0.5f);
-        yield return StartCoroutine(PlayDialogue());
-
-        // Fade to black then switch to FPS
-        yield return StartCoroutine(screenFader.FadeOut());
+        Playing = true;
+        ShowCrosshair(false); // no aiming dot during the cutscenes
+        if (prologue != null)
+        {
+            // The night before, then the morning: the student wakes up and sits up in bed (third person).
+            // Both end on a black screen.
+            yield return prologue.Play(this, screenFader);
+            yield return prologue.PlayWakeUp(this, screenFader);
+        }
+        else
+        {
+            // Without the prologue: the original first-person wake-up.
+            yield return StartCoroutine(Blink());
+            yield return new WaitForSeconds(pauseBeforeSequence);
+            yield return StartCoroutine(LookAround());
+            yield return StartCoroutine(SitUp());
+            yield return new WaitForSeconds(0.5f);
+            yield return StartCoroutine(PlayDialogue());
+            yield return StartCoroutine(screenFader.FadeOut()); // fade to black then switch to FPS
+        }
 
         cinematicCamera.enabled = false;
         player.SetActive(true);
@@ -136,6 +160,21 @@ public class WakeUpSequence : MonoBehaviour
         if (fpc != null) fpc.enabled = true;
 
         yield return StartCoroutine(screenFader.FadeIn());
+        Playing = false;
+        ShowCrosshair(true);
+
+        // First control hints (each shows once per playthrough).
+        Hints.Show("move", "keys", "Move", $"Press {Hints.Cap("W")}{Hints.Cap("A")}{Hints.Cap("S")}{Hints.Cap("D")} to walk",
+            Key.W, Key.A, Key.S, Key.D);
+        Hints.ShowAfter(1.5f, "look", "mouse", "Look around", "Move the mouse");
+        Hints.ShowAfter(20f, "pause", "keys", "Pause", $"Press {Hints.Cap("Esc")} to pause or open Settings", Key.Escape);
+    }
+
+    // The crosshair dot sits on the HUD, so it stays on screen even while the player object is switched off.
+    void ShowCrosshair(bool show)
+    {
+        var crosshair = FindFirstObjectByType<RaycastCrosshair>(FindObjectsInactive.Include);
+        if (crosshair != null && crosshair.crosshairDot != null) crosshair.crosshairDot.gameObject.SetActive(show);
     }
 
     IEnumerator Blink()

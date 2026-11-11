@@ -36,6 +36,7 @@ public class ObjectiveManager : MonoBehaviour
     public Color completedColor = new Color(0.4f, 0.9f, 0.4f, 1f);
 
     [Header("Timing")]
+    [Tooltip("Chapter 1: seconds after the opening (prologue + wake-up) ends before the first objective appears.")]
     public float initialDelay = 0f;
 
     // ── Objective Data ──────────────────────────────────────
@@ -58,6 +59,8 @@ public class ObjectiveManager : MonoBehaviour
     public Objective[] objectives;
 
     private int _currentIndex = -1;
+    // The objective on screen (-1 = none yet). The path guide follows it.
+    public int Current => _currentIndex;
     private bool _isTransitioning = false;
     private List<TextMeshProUGUI> _activeSubTasks = new List<TextMeshProUGUI>();
 
@@ -77,7 +80,7 @@ public class ObjectiveManager : MonoBehaviour
             {
                 new Objective { title = "Late Night", subTasks = new SubTask[] { new SubTask { description = "Check your phone." } } },
                 new Objective { title = "Exam Tomorrow", subTasks = new SubTask[] { new SubTask { description = "Buy a scientific calculator: open your laptop (at your desk), then Browser > ShopHub." } } },
-                new Objective { title = "Report Ghostline", subTasks = new SubTask[] { new SubTask { description = "Report Ghostline: laptop > Browser > Report a Cybercrime." } } },
+                new Objective { title = "Report Ghostline", subTasks = new SubTask[] { new SubTask { description = "On your laptop: Browser > Report a Cybercrime." } } },
                 new Objective { title = "Get Some Sleep", subTasks = new SubTask[] { new SubTask { description = "Close the laptop (Esc), then go to bed and press E." } } },
             };
             if (subTaskTemplate != null) subTaskTemplate.gameObject.SetActive(false);
@@ -202,8 +205,35 @@ public class ObjectiveManager : MonoBehaviour
 
     IEnumerator ShowFirstObjectiveAfterDelay()
     {
+        // Wait until the opening (prologue + wake-up) is over, then the short delay.
+        yield return null; // all Start()s have run, so WakeUpSequence has begun
+        while (WakeUpSequence.Playing) yield return null;
         yield return new WaitForSeconds(initialDelay);
         SetObjective(0);
+    }
+
+    // ── Hidden during cutscenes ─────────────────────────────
+    // The opening, the city arrival shots, the café order wait and the results screen: the box would
+    // sit on the black bars. LateUpdate runs after the fade coroutines, so it wins while hidden; afterwards the
+    // alpha it had goes back.
+    bool _hiddenForCutscene;
+    float _alphaBeforeCutscene = 1f;
+
+    void LateUpdate()
+    {
+        if (canvasGroup == null) return;
+        bool cutscene = WakeUpSequence.Playing || CityArrival.Playing || CafeCounter.Waiting
+                        || BedtimeBeat.Playing || DebriefScreen.IsOpen;
+        if (cutscene)
+        {
+            if (!_hiddenForCutscene) { _hiddenForCutscene = true; _alphaBeforeCutscene = canvasGroup.alpha; }
+            canvasGroup.alpha = 0f;
+        }
+        else if (_hiddenForCutscene)
+        {
+            _hiddenForCutscene = false;
+            canvasGroup.alpha = _alphaBeforeCutscene;
+        }
     }
 
     // ── Public API ──────────────────────────────────────────

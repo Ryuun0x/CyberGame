@@ -2,119 +2,105 @@ using System.Collections;
 using StarterAssets;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Events;
-using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-#if ENABLE_INPUT_SYSTEM
-using UnityEngine.InputSystem.UI;
-#endif
 
+/// <summary>
+/// The results screen at the end of each chapter: the score, then one card per threat and habit
+/// (what you did, what to do, the source). It is the DebriefScreen prefab, placed in both game scenes.
+/// The cards are copies of hidden templates inside the screen (like ObjectiveManager's sub-task template).
+/// Its buttons call MainMenu / PlayAgain / Continue from their OnClick.
+/// </summary>
 public class DebriefScreen : MonoBehaviour
 {
     public const string RestartScene = "Interior";
     public const string MenuScene = "StartMenu";
 
-    static readonly Color BackdropColor = new Color(0.03f, 0.04f, 0.07f, 0.94f);
-    static readonly Color PanelColor = new Color(0.08f, 0.1f, 0.14f, 1f);
-    static readonly Color CardColor = new Color(0.12f, 0.14f, 0.19f, 1f);
-    static readonly Color TextMain = new Color(0.93f, 0.95f, 0.98f, 1f);
-    static readonly Color TextDim = new Color(0.62f, 0.67f, 0.75f, 1f);
     static readonly Color SafeColor = new Color(0.36f, 0.85f, 0.52f, 1f);
     static readonly Color RecoveredColor = new Color(0.98f, 0.76f, 0.3f, 1f);
-    static readonly Color PendingColor = new Color(0.66f, 0.58f, 0.98f, 1f);
     static readonly Color CompromisedColor = new Color(0.96f, 0.38f, 0.38f, 1f);
-    static readonly Color PrimaryButton = new Color(0.25f, 0.52f, 0.96f, 1f);
-    static readonly Color SecondaryButton = new Color(0.18f, 0.21f, 0.28f, 1f);
+
+    [Header("Screen (hidden until a chapter ends)")]
+    public GameObject screen;
+    public CanvasGroup screenGroup;
+    public TextMeshProUGUI titleText;
+    public TextMeshProUGUI summaryText;
+    public TextMeshProUGUI scoreText;
+
+    [Header("Cards (copied from the hidden templates)")]
+    public Transform cardList;
+    public GameObject headingTemplate;
+    public GameObject cardTemplate;
+    public GameObject pendingTemplate;
+
+    [Header("Buttons")]
+    public GameObject mainMenuButton;
+    public GameObject continueButton;
+
+    [Header("Next chapter title card")]
+    public GameObject titleCard;
+    public CanvasGroup titleCardGroup;
+    public TextMeshProUGUI titleCardText;
 
     public static bool IsOpen { get; private set; }
 
-    CanvasGroup _group;
+    static DebriefScreen _instance;
+    string nextChapter;
 
-    string _nextChapter, _summary;
+    void Awake() => _instance = this;
+
+    void Start()
+    {
+        screen.SetActive(false);
+        titleCard.SetActive(false);
+        IsOpen = false;
+    }
 
     // nextChapter: if set, a Continue button leads to that chapter's title card.
     // summary: the line under the title; leave it out to use the Chapter 1 thesis line.
     public static void Show(string chapterTitle, string nextChapter = null, string summary = null)
     {
-        if (IsOpen) return;
+        if (IsOpen || _instance == null) return;
         IsOpen = true;
-        var screen = new GameObject("DebriefScreen").AddComponent<DebriefScreen>();
-        screen._nextChapter = nextChapter;
-        screen._summary = summary;
-        screen.Build(chapterTitle);
+        _instance.Open(chapterTitle, nextChapter, summary);
     }
 
-    void Build(string chapterTitle)
+    void Open(string chapterTitle, string next, string summary)
     {
+        nextChapter = next;
         FreezeGameplay();
-        EnsureEventSystem();
-
-        UIBuild.Overlay(gameObject, 500);
-        _group = gameObject.AddComponent<CanvasGroup>();
-        _group.alpha = 0f;
-
-        var backdrop = UIBuild.Stretch(UIBuild.NewRect("Backdrop", transform));
-        backdrop.gameObject.AddComponent<Image>().color = BackdropColor;
-
-        var panel = UIBuild.NewRect("Panel", transform);
-        panel.anchorMin = panel.anchorMax = new Vector2(0.5f, 0.5f);
-        panel.sizeDelta = new Vector2(1180, 920);
-        panel.gameObject.AddComponent<Image>().color = PanelColor;
-        var panelLayout = panel.gameObject.AddComponent<VerticalLayoutGroup>();
-        panelLayout.padding = new RectOffset(56, 56, 48, 48);
-        panelLayout.spacing = 14;
-        panelLayout.childControlWidth = true;
-        panelLayout.childControlHeight = true;
-        panelLayout.childForceExpandWidth = true;
-        panelLayout.childForceExpandHeight = false;
 
         var log = ThreatLog.Instance;
         bool compromised = log != null && log.AnyCompromised();
         int score = log != null ? log.ScorePercent() : 100;
-        Color scoreColor = score >= 90 ? SafeColor : score >= 60 ? RecoveredColor : CompromisedColor;
 
-        var eyebrow = UIBuild.Label(panel, "CHAPTER COMPLETE", 20, TextDim, FontStyles.Bold);
-        eyebrow.characterSpacing = 8;
-        UIBuild.Label(panel, chapterTitle, 46, TextMain, FontStyles.Bold);
-        UIBuild.Label(panel, _summary ?? (compromised
-            ? "Your thesis was submitted, but an attacker stole your school login."
-            : "Your thesis was submitted safely."), 24, TextMain, FontStyles.Normal);
-        UIBuild.Label(panel, $"Security score  <b>{score}%</b>   ·   {ThreatLog.RatingFor(score)}", 28, scoreColor, FontStyles.Normal);
+        titleText.text = chapterTitle;
+        summaryText.text = summary ?? (compromised
+            ? "Your thesis was submitted, but an attacker stole your Goggle login."
+            : "Your thesis was submitted safely.");
+        scoreText.text = $"Security score  <b>{score}%</b>   ·   {ThreatLog.RatingFor(score)}";
+        scoreText.color = score >= 90 ? SafeColor : score >= 60 ? RecoveredColor : CompromisedColor;
 
-        var content = ScrollArea(panel);
+        foreach (Transform child in cardList)
+            if (child.gameObject != headingTemplate && child.gameObject != cardTemplate && child.gameObject != pendingTemplate)
+                Destroy(child.gameObject);
         if (log != null)
         {
-            AddSection(content, log, ThreatKind.Threat, "THREATS YOU FACED");
-            AddSection(content, log, ThreatKind.Habit, "HABITS THAT PROTECTED YOU");
+            AddSection(log, ThreatKind.Threat, "THREATS YOU FACED");
+            AddSection(log, ThreatKind.Habit, "HABITS THAT PROTECTED YOU");
         }
 
-        var buttons = UIBuild.NewRect("Buttons", panel);
-        var row = buttons.gameObject.AddComponent<HorizontalLayoutGroup>();
-        row.spacing = 16;
-        row.childAlignment = TextAnchor.MiddleRight;
-        row.childControlWidth = true;
-        row.childControlHeight = true;
-        row.childForceExpandWidth = false;
-        row.childForceExpandHeight = false;
-        if (Application.CanStreamedLevelBeLoaded(MenuScene))
-            UIBuild.MakeButton(buttons, "Main Menu", SecondaryButton, () => LoadFresh(MenuScene));
-        bool next = !string.IsNullOrEmpty(_nextChapter);
-        UIBuild.MakeButton(buttons, "Play Again", next ? SecondaryButton : PrimaryButton, () => LoadFresh(RestartScene));
-        if (next) UIBuild.MakeButton(buttons, "Continue", PrimaryButton, () => StartCoroutine(TitleCard()));
-
+        mainMenuButton.SetActive(Application.CanStreamedLevelBeLoaded(MenuScene));
+        continueButton.SetActive(!string.IsNullOrEmpty(nextChapter));
+        screen.SetActive(true);
         StartCoroutine(FadeIn());
     }
 
     void Update()
     {
+        if (!IsOpen) return;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
-    }
-
-    void OnDestroy()
-    {
-        IsOpen = false;
     }
 
     static void FreezeGameplay()
@@ -126,54 +112,45 @@ public class DebriefScreen : MonoBehaviour
         foreach (var c in FindObjectsByType<RaycastCrosshair>(FindObjectsSortMode.None)) c.enabled = false;
     }
 
-    static void EnsureEventSystem()
-    {
-        if (FindFirstObjectByType<EventSystem>() != null) return;
-        var es = new GameObject("EventSystem", typeof(EventSystem));
-#if ENABLE_INPUT_SYSTEM
-        es.AddComponent<InputSystemUIInputModule>();
-#else
-        es.AddComponent<StandaloneInputModule>();
-#endif
-    }
+    // ── Buttons (OnClick in the Inspector) ──
 
-    static void LoadFresh(string sceneName)
+    public void MainMenu() => LoadFresh(MenuScene);
+
+    public void PlayAgain() => LoadFresh(RestartScene);
+
+    public void Continue() => StartCoroutine(TitleCard());
+
+    // Starts over: clears the progress flags and the threat log, then loads the scene. Also used by the pause menu.
+    public static void LoadFresh(string sceneName)
     {
         Time.timeScale = 1f;
         IsOpen = false;
         if (ThreatLog.Instance != null) ThreatLog.Instance.ResetLog();
         if (GameProgressManager.Instance != null)
         {
-            Destroy(GameProgressManager.Instance.gameObject);
+            Destroy(GameProgressManager.Instance.gameObject); // also removes ThreatLog (same object)
             GameProgressManager.Instance = null;
+            ThreatLog.Instance = null;
         }
         CafeZone.PlayerInCafe = false;
+        Hints.ResetAll(); // a new game teaches the controls again
         SceneManager.LoadScene(sceneName);
     }
 
-    // Next chapter's title card over the debrief, then that chapter starts.
+    // Next chapter's title card over the results, then that chapter starts at home.
     IEnumerator TitleCard()
     {
-        var card = UIBuild.Stretch(UIBuild.NewRect("TitleCard", transform));
-        card.gameObject.AddComponent<Image>().color = Color.black;
-        var group = card.gameObject.AddComponent<CanvasGroup>();
-        group.alpha = 0f;
-        UIBuild.Column(card, 0, 24).childAlignment = TextAnchor.MiddleCenter;
-        var title = UIBuild.Label(card, _nextChapter, 72, TextMain, FontStyles.Bold);
-        title.alignment = TextAlignmentOptions.Center;
+        titleCardText.text = nextChapter;
+        titleCardGroup.alpha = 0f;
+        titleCard.SetActive(true);
         for (float t = 0f; t < 1f; t += Time.unscaledDeltaTime / 1.2f)
         {
-            group.alpha = t;
+            titleCardGroup.alpha = t;
             yield return null;
         }
-        group.alpha = 1f;
+        titleCardGroup.alpha = 1f;
         yield return new WaitForSecondsRealtime(2.5f);
-        StartNextChapter();
-    }
 
-    // Next chapter starts at home: same progress and threat log (the finale recaps every choice).
-    static void StartNextChapter()
-    {
         Time.timeScale = 1f;
         IsOpen = false;
         if (GameProgressManager.Instance != null) GameProgressManager.Instance.chapter++;
@@ -183,61 +160,43 @@ public class DebriefScreen : MonoBehaviour
 
     IEnumerator FadeIn()
     {
-        float t = 0f;
-        while (t < 1f)
+        for (float t = 0f; t < 1f; t += Time.unscaledDeltaTime / 0.6f)
         {
-            t += Time.unscaledDeltaTime / 0.6f;
-            _group.alpha = Mathf.SmoothStep(0f, 1f, t);
+            screenGroup.alpha = Mathf.SmoothStep(0f, 1f, t);
             yield return null;
         }
-        _group.alpha = 1f;
+        screenGroup.alpha = 1f;
     }
 
-    static void AddSection(RectTransform content, ThreatLog log, ThreatKind kind, string heading)
+    // ── Cards ──
+
+    void AddSection(ThreatLog log, ThreatKind kind, string heading)
     {
         bool any = false;
         foreach (var e in log.Entries)
         {
             var info = ThreatCatalog.Get(e.id);
             if (info == null || info.Kind != kind || log.IsPending(e.id)) continue;
-            if (!any) any = Heading(content, heading);
-            AddCard(content, info, e.outcome);
+            if (!any) any = AddHeading(heading);
+            AddCard(info, e.outcome);
         }
         foreach (var id in log.Pending)
         {
             var info = ThreatCatalog.Get(id);
             if (info == null || info.Kind != kind) continue;
-            if (!any) any = Heading(content, heading);
-            AddPendingCard(content, info);
+            if (!any) any = AddHeading(heading);
+            var card = Copy(pendingTemplate);
+            SetText(card, "Body/Header/Title", $"{info.Title}  <color=#8A93A3><size=70%>{info.Category.ToUpperInvariant()}</size></color>");
         }
     }
 
-    static bool Heading(RectTransform content, string heading)
+    bool AddHeading(string heading)
     {
-        var h = UIBuild.Label(content, heading, 18, TextDim, FontStyles.Bold);
-        h.characterSpacing = 6;
-        h.margin = new Vector4(0, 10, 0, 0);
+        SetText(Copy(headingTemplate), "", heading);
         return true;
     }
 
-    // Consequence still to come: no result or lesson yet, so nothing is given away.
-    static void AddPendingCard(RectTransform parent, ThreatInfo info)
-    {
-        var body = CardBody(parent, info, PendingColor, "PENDING");
-        var line = UIBuild.NewRect("Pending", body);
-        var row = line.gameObject.AddComponent<HorizontalLayoutGroup>();
-        row.spacing = 10;
-        row.childAlignment = TextAnchor.MiddleLeft;
-        row.childControlWidth = row.childControlHeight = true;
-        row.childForceExpandWidth = row.childForceExpandHeight = false;
-        var butterfly = UIBuild.NewRect("Butterfly", line); // the consequence notice's butterfly (the font has no emoji)
-        butterfly.gameObject.AddComponent<Image>().sprite = Resources.Load<Sprite>("ConsequenceButterfly");
-        var size = butterfly.gameObject.AddComponent<LayoutElement>();
-        size.preferredWidth = size.preferredHeight = 30;
-        UIBuild.Label(line, "CONSEQUENCE PENDING — You'll find out.", 21, PendingColor, FontStyles.Bold);
-    }
-
-    static void AddCard(RectTransform parent, ThreatInfo info, ThreatOutcome outcome)
+    void AddCard(ThreatInfo info, ThreatOutcome outcome)
     {
         Color accent = outcome == ThreatOutcome.Safe ? SafeColor
             : outcome == ThreatOutcome.Recovered ? RecoveredColor
@@ -249,78 +208,30 @@ public class DebriefScreen : MonoBehaviour
             : outcome == ThreatOutcome.Recovered ? info.RecoveredResult ?? info.SafeResult
             : info.CompromisedResult;
 
-        var body = CardBody(parent, info, accent, badge);
-        UIBuild.Label(body, result, 21, TextMain, FontStyles.Normal);
-        UIBuild.Label(body, $"<b>What to do:</b> {info.Lesson}", 20, TextDim, FontStyles.Normal);
-        UIBuild.Label(body, info.Source, 15, TextDim, FontStyles.Italic);
+        var card = Copy(cardTemplate);
+        card.transform.Find("Accent").GetComponent<Image>().color = accent;
+        SetText(card, "Body/Header/Title", $"{info.Title}  <color=#8A93A3><size=70%>{info.Category.ToUpperInvariant()}</size></color>");
+        SetText(card, "Body/Header/Badge", badge).color = accent;
+        SetText(card, "Body/Result", result);
+        // Wrong (or late) choices also show the right action and what it would have done.
+        string better = outcome != ThreatOutcome.Safe && info.Better != null
+            ? $"<color=#5CD985><b>Better choice:</b> {info.Better}</color>\n" : "";
+        SetText(card, "Body/Lesson", $"{better}<b>What to do:</b> {info.Lesson}");
+        SetText(card, "Body/Source", info.Source);
     }
 
-    // Card frame: accent stripe, title with category, badge. Returns the body to fill.
-    static RectTransform CardBody(RectTransform parent, ThreatInfo info, Color accent, string badge)
+    GameObject Copy(GameObject template)
     {
-        var card = UIBuild.NewRect("Card", parent);
-        card.gameObject.AddComponent<Image>().color = CardColor;
-        var cardRow = card.gameObject.AddComponent<HorizontalLayoutGroup>();
-        cardRow.childControlWidth = true;
-        cardRow.childControlHeight = true;
-        cardRow.childForceExpandWidth = false;
-        cardRow.childForceExpandHeight = true;
-
-        var stripe = UIBuild.NewRect("Accent", card);
-        stripe.gameObject.AddComponent<Image>().color = accent;
-        stripe.gameObject.AddComponent<LayoutElement>().preferredWidth = 6;
-
-        var body = UIBuild.NewRect("Body", card);
-        body.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1;
-        var bodyLayout = body.gameObject.AddComponent<VerticalLayoutGroup>();
-        bodyLayout.padding = new RectOffset(24, 24, 18, 18);
-        bodyLayout.spacing = 6;
-        bodyLayout.childControlWidth = true;
-        bodyLayout.childControlHeight = true;
-        bodyLayout.childForceExpandWidth = true;
-        bodyLayout.childForceExpandHeight = false;
-
-        var header = UIBuild.NewRect("Header", body);
-        var headerRow = header.gameObject.AddComponent<HorizontalLayoutGroup>();
-        headerRow.childControlWidth = true;
-        headerRow.childControlHeight = true;
-        headerRow.childForceExpandWidth = false;
-        headerRow.childForceExpandHeight = false;
-        var title = UIBuild.Label(header, $"{info.Title}  <color=#8A93A3><size=70%>{info.Category.ToUpperInvariant()}</size></color>", 26, TextMain, FontStyles.Bold);
-        title.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1;
-        var badgeLabel = UIBuild.Label(header, badge, 18, accent, FontStyles.Bold);
-        badgeLabel.alignment = TextAlignmentOptions.Right;
-        badgeLabel.characterSpacing = 4;
-        return body;
+        var copy = Instantiate(template, cardList);
+        copy.SetActive(true);
+        return copy;
     }
 
-    static RectTransform ScrollArea(RectTransform parent)
+    static TextMeshProUGUI SetText(GameObject card, string path, string text)
     {
-        var area = UIBuild.NewRect("Scroll", parent);
-        area.gameObject.AddComponent<LayoutElement>().flexibleHeight = 1;
-        var scroll = area.gameObject.AddComponent<ScrollRect>();
-        scroll.horizontal = false;
-        scroll.movementType = ScrollRect.MovementType.Clamped;
-        scroll.scrollSensitivity = 30f;
-
-        var viewport = UIBuild.Stretch(UIBuild.NewRect("Viewport", area));
-        viewport.gameObject.AddComponent<RectMask2D>();
-
-        var content = UIBuild.NewRect("Content", viewport);
-        content.anchorMin = new Vector2(0, 1);
-        content.anchorMax = new Vector2(1, 1);
-        content.pivot = new Vector2(0.5f, 1);
-        content.sizeDelta = Vector2.zero;
-        var layout = content.gameObject.AddComponent<VerticalLayoutGroup>();
-        layout.spacing = 12;
-        layout.childControlWidth = true;
-        layout.childControlHeight = true;
-        layout.childForceExpandWidth = true;
-        layout.childForceExpandHeight = false;
-        content.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-        scroll.viewport = viewport;
-        scroll.content = content;
-        return content;
+        var target = path == "" ? card.transform : card.transform.Find(path);
+        var tmp = target.GetComponent<TextMeshProUGUI>();
+        tmp.text = text;
+        return tmp;
     }
 }

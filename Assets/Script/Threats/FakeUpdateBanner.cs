@@ -1,102 +1,135 @@
 using System.Collections;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
-// Café laptop, once online with the thesis open: the web page pushes a fake "browser update".
-// X (or never touching it) is safe; Download "installs" it. The payoff (files locked, backup saves you)
-// comes in Chapter 2 through GameProgressManager.installedFakeUpdate.
+// Café laptop, once online with the thesis open: the web page pushes a fake "browser update" popup
+// (FakeUpdatePopup, placed inside the browser window, hidden until shown). Reviewer #12: the player gets a real
+// chance to avoid it.
+//   Question:  "Update required"  X = Safe (nothing downloaded), Download → the file downloads, then
+//   RunPrompt: a security warning "Do you want to run this file?" (Browser_Update.exe, Unknown Publisher):
+//                Run        → installs it: Compromised (GameProgressManager.installedFakeUpdate; Chapter 2 locks the files)
+//                Don't run  → Recovered (downloaded, never ran)
+//                Scan with antivirus → the scan finds ransomware and removes the file: Recovered
+//   ScanResult: what the antivirus found, OK closes.
+// "Working" shows the progress bar (downloading / scanning / installing) with its text.
 public class FakeUpdateBanner : MonoBehaviour
 {
-    static readonly Color Amber = new Color(1f, 0.87f, 0.45f);
-    static readonly Color Ink = new Color(0.12f, 0.13f, 0.16f);
-    static readonly Color Blue = new Color(0.2f, 0.47f, 0.93f);
-    static readonly Color Grey = new Color(0.55f, 0.57f, 0.62f);
+    [Tooltip("The dimmed popup over the browser.")]
+    public GameObject popup;
+    [Tooltip("Title, message, X and Download buttons.")]
+    public GameObject question;
+    [Tooltip("The security warning after the download: Scan with antivirus / Run / Don't run.")]
+    public GameObject runPrompt;
+    [Tooltip("The antivirus result: threat found and removed, OK.")]
+    public GameObject scanResult;
+    [Tooltip("Progress bar with a line of text (downloading / scanning / installing).")]
+    public GameObject installing;
+    public TextMeshProUGUI workingText;
+    public RectTransform progressFill;
 
-    RectTransform popup, card;
-    bool decided;
+    public bool Shown { get; private set; }
 
-    void Awake()
+    bool decided, downloaded;
+
+    void Start() => popup.SetActive(false);
+
+    // Called by LaptopDesktop once the laptop is online with the thesis open. Only once.
+    public void Show()
     {
-        var desktop = GetComponent<LaptopDesktop>();
-        var window = desktop != null ? desktop.thesisWindow : null;
-        // Dimmed backdrop over the thesis window; it blocks the page until the player picks X or Download.
-        popup = UIBuild.Stretch(UIBuild.NewRect("FakeUpdatePopup", window != null ? window.transform : transform));
-        popup.gameObject.AddComponent<LayoutElement>().ignoreLayout = true; // in case the window lays out its children
-        popup.gameObject.AddComponent<Image>().color = new Color(0, 0, 0, 0.45f);
-
-        card = UIBuild.NewRect("Card", popup);
-        card.anchorMin = card.anchorMax = card.pivot = new Vector2(0.5f, 0.5f);
-        card.sizeDelta = new Vector2(620, 0);
-        card.gameObject.AddComponent<Image>().color = Color.white;
-        UIBuild.Column(card, 32, 18);
-        card.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-        var header = Row(UIBuild.NewRect("Header", card), TextAnchor.MiddleLeft);
-        var title = UIBuild.Label(header, "Update required", 32, Ink, FontStyles.Bold);
-        title.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1;
-        UIBuild.MakeButton(header, "X", Grey, Dismiss, 48, 48, 24);
-
-        var stripe = UIBuild.NewRect("Stripe", card);
-        stripe.gameObject.AddComponent<Image>().color = Amber;
-        stripe.gameObject.AddComponent<LayoutElement>().preferredHeight = 6;
-
-        UIBuild.Label(card, "Your browser is out of date. Download update to continue.", 26, Ink, FontStyles.Normal);
-
-        var footer = Row(UIBuild.NewRect("Footer", card), TextAnchor.MiddleRight);
-        UIBuild.MakeButton(footer, "Download", Blue, Download, 220, 60, 26);
+        if (Shown) return;
+        Shown = true;
+        ShowStep(question);
+        popup.SetActive(true);
     }
 
-    static RectTransform Row(RectTransform rect, TextAnchor alignment)
-    {
-        var row = rect.gameObject.AddComponent<HorizontalLayoutGroup>();
-        row.spacing = 14;
-        row.childAlignment = alignment;
-        row.childControlWidth = row.childControlHeight = true;
-        row.childForceExpandWidth = row.childForceExpandHeight = false;
-        return rect;
-    }
-
-    // X, or submitting the thesis without ever touching it.
+    // Called by the first popup's X, or when the thesis is sent without touching the popup.
     public void Dismiss()
     {
-        if (!Decide(true)) return;
-        Destroy(popup.gameObject);
+        if (downloaded) { DontRun(); return; } // closed at the security warning = didn't run it
+        if (!Decide(true, false)) return;
+        popup.SetActive(false);
         ConsequenceToast.Show();
     }
 
+    // Called by the Download button: only downloads. Running it is a separate choice.
     public void Download()
     {
-        if (!Decide(false)) return;
-        if (GameProgressManager.Instance != null) GameProgressManager.Instance.installedFakeUpdate = true;
-        StartCoroutine(Install());
+        if (decided || downloaded) return;
+        downloaded = true;
+        StartCoroutine(Work("Downloading Browser_Update.exe...", 1.2f, runPrompt));
     }
 
-    bool Decide(bool safe)
+    // Called by the security warning's Run button.
+    public void Run()
+    {
+        if (!downloaded || !Decide(false, false)) return;
+        if (GameProgressManager.Instance != null) GameProgressManager.Instance.installedFakeUpdate = true;
+        StartCoroutine(Work("Installing browser update...", 2.5f, null)); // looks harmless; nothing visible happens
+    }
+
+    // Called by the security warning's Don't run button (and its X).
+    public void DontRun()
+    {
+        if (!downloaded || !Decide(true, true)) return;
+        popup.SetActive(false);
+        ConsequenceToast.Show();
+    }
+
+    // Called by the security warning's Scan with antivirus button.
+    public void Scan()
+    {
+        if (!downloaded || !Decide(true, true)) return;
+        StartCoroutine(Work("Scanning Browser_Update.exe with antivirus...", 2f, scanResult));
+    }
+
+    // Called by the scan result's OK (and its X).
+    public void CloseScanResult()
+    {
+        popup.SetActive(false);
+        ConsequenceToast.Show();
+    }
+
+    // exposed = took the bait (downloaded) but backed out → Recovered instead of Safe.
+    bool Decide(bool safe, bool exposed)
     {
         if (decided) return false;
         decided = true;
-        if (ThreatLog.Instance != null) ThreatLog.Instance.Record("fake_update", safe);
+        if (ThreatLog.Instance != null)
+        {
+            if (exposed) ThreatLog.Instance.MarkExposed("fake_update");
+            ThreatLog.Instance.Record("fake_update", safe);
+        }
         return true;
     }
 
-    // Looks like a harmless update, then nothing visible happens.
-    IEnumerator Install()
+    void ShowStep(GameObject step)
     {
-        foreach (Transform child in card) Destroy(child.gameObject);
-        UIBuild.Label(card, "Installing browser update...", 28, Ink, FontStyles.Bold);
-        var track = UIBuild.NewRect("Progress", card);
-        track.gameObject.AddComponent<Image>().color = new Color(0, 0, 0, 0.12f);
-        track.gameObject.AddComponent<LayoutElement>().preferredHeight = 18;
-        var fill = UIBuild.Stretch(UIBuild.NewRect("Fill", track));
-        fill.gameObject.AddComponent<Image>().color = Blue;
+        question.SetActive(step == question);
+        runPrompt.SetActive(step == runPrompt);
+        scanResult.SetActive(step == scanResult);
+        installing.SetActive(step == installing);
+    }
 
-        for (float t = 0; t < 1; t += Time.unscaledDeltaTime / 2.5f)
+    // The progress bar for a moment, then the next step (null = close, as after installing).
+    IEnumerator Work(string text, float seconds, GameObject next)
+    {
+        workingText.text = text;
+        ShowStep(installing);
+        for (float t = 0; t < 1; t += Time.unscaledDeltaTime / seconds)
         {
-            fill.anchorMax = new Vector2(t, 1);
+            progressFill.anchorMax = new Vector2(t, 1);
             yield return null;
         }
-        Destroy(popup.gameObject);
+        if (next != null) { ShowStep(next); yield break; }
+        popup.SetActive(false);
         ConsequenceToast.Show();
+    }
+
+    // Editor checks only: back to never shown.
+    public void ResetForChecks()
+    {
+        StopAllCoroutines();
+        Shown = decided = downloaded = false;
+        popup.SetActive(false);
     }
 }

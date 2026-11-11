@@ -4,26 +4,28 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // The stranger at the table next to the player's laptop (a seated NPC placed in the city scene, with SeatedPose).
-// After the upload, when the player stands up, their screen flashes the Ghostline logo, the lid closes,
-// they get up and walk out of the café. Their laptop is a stripped copy of the café laptop, made at runtime;
-// the logo is drawn in code (no art asset yet).
+// As soon as the thesis is sent, their screen flashes the Ghostline logo, the lid closes, they get up, walk out
+// of the café onto the sidewalk and carry on down the street like the other pedestrians (CityPedestrian).
+// Their laptop is the "StrangerLaptop" object on their table (a copy of the café laptop model with no scripts),
+// and the logo is its "GhostlineScreen" canvas (hidden until they leave).
 public class CafeStranger : MonoBehaviour
 {
-    // On their table (Table_08 (2)), turned half towards the player's seat (screen facing north-east)
-    // so the logo can be glimpsed from there.
-    static readonly Vector3 LaptopSpot = new Vector3(-3.8f, 0.939f, 79.93f);
-    const float LaptopYaw = 135; // café laptop model: yaw 180 faces +X, 90 faces +Z
-    // Around the counter and out through the café door.
+    [Header("The stranger's laptop (placed on their table)")]
+    public Transform laptop;
+    [Tooltip("The lid; it folds down when they leave.")]
+    public Transform hinge;
+    [Tooltip("The GhostlineScreen canvas on the lid. Hidden until they leave.")]
+    public GameObject screen;
+
+    // Around the counter, out through the café door and onto the sidewalk.
     static readonly Vector3[] ExitPath =
     {
-        new Vector3(-2.6f, 0, 82.6f), new Vector3(-0.9f, 0, 83.3f), new Vector3(-0.61f, 0, 84.8f), new Vector3(-0.61f, 0, 89f)
+        new Vector3(-2.6f, 0, 82.6f), new Vector3(-0.9f, 0, 83.3f), new Vector3(-0.61f, 0, 84.8f), new Vector3(-0.61f, 0, 85.8f)
     };
     const float WalkSpeed = 1.4f;
 
     static CafeStranger _current;
 
-    Transform laptop, hinge;
-    GameObject screen;
     Animator anim;
     SeatedPose seated;
     bool leaving;
@@ -34,8 +36,7 @@ public class CafeStranger : MonoBehaviour
     {
         anim = GetComponentInChildren<Animator>();
         seated = GetComponent<SeatedPose>();
-        var cafeLaptop = FindFirstObjectByType<LaptopInteraction>();
-        if (cafeLaptop != null) BuildLaptop(cafeLaptop.transform);
+        if (screen != null) screen.SetActive(false);
     }
 
     public static void LeaveIfPresent()
@@ -44,47 +45,6 @@ public class CafeStranger : MonoBehaviour
     }
 
     static Vector3 Flat(Vector3 v) { v.y = 0; return v.normalized; }
-
-    void BuildLaptop(Transform cafeLaptop)
-    {
-        laptop = Instantiate(cafeLaptop.gameObject, LaptopSpot, Quaternion.Euler(0, LaptopYaw, 0)).transform; // same model, no interaction
-        laptop.name = "StrangerLaptop";
-        foreach (var mb in laptop.GetComponentsInChildren<MonoBehaviour>()) DestroyImmediate(mb); // before LaptopInteraction.Start can touch the café canvas
-        var viewPoint = laptop.Find("LaptopViewPoint");
-        if (viewPoint != null) Destroy(viewPoint.gameObject);
-        hinge = laptop.Find("ScreenHinge");
-
-        // Screen canvas: same pose relative to the hinge as the café laptop's LaptopCanvas, so it folds with the lid.
-        var cafeHinge = cafeLaptop.Find("ScreenHinge");
-        var cafeCanvas = FindFirstObjectByType<LaptopDesktop>(FindObjectsInactive.Include);
-        if (hinge == null || cafeHinge == null || cafeCanvas == null) return;
-        var source = (RectTransform)cafeCanvas.transform;
-        var rect = UIBuild.NewRect("GhostlineScreen", hinge);
-        rect.gameObject.layer = 0;
-        rect.localPosition = cafeHinge.InverseTransformPoint(source.position);
-        rect.localRotation = Quaternion.Inverse(cafeHinge.rotation) * source.rotation;
-        rect.localScale = source.lossyScale / cafeHinge.lossyScale.x;
-        rect.sizeDelta = source.rect.size;
-        rect.gameObject.AddComponent<Canvas>().renderMode = RenderMode.WorldSpace;
-        screen = rect.gameObject;
-        BuildLogo(rect);
-        screen.SetActive(false);
-    }
-
-    static void BuildLogo(RectTransform rect)
-    {
-        var green = new Color(0.35f, 1f, 0.55f);
-        UIBuild.Stretch(UIBuild.NewRect("Background", rect)).gameObject.AddComponent<Image>().color = new Color(0.02f, 0.03f, 0.04f);
-        var icon = UIBuild.NewRect("Ghost", rect);
-        icon.sizeDelta = new Vector2(360, 360);
-        icon.anchoredPosition = new Vector2(0, 110);
-        icon.gameObject.AddComponent<Image>().sprite = UIBuild.Icon(128, IsGhost, green);
-        var label = UIBuild.Label(rect, "GHOSTLINE", 150, green, FontStyles.Bold);
-        label.alignment = TextAlignmentOptions.Center;
-        label.characterSpacing = 18;
-        label.rectTransform.sizeDelta = new Vector2(1800, 200);
-        label.rectTransform.anchoredPosition = new Vector2(0, -210);
-    }
 
     // Ghost: round head, straight sides, wavy hem, two eye holes.
     public static bool IsGhost(float x, float y)
@@ -121,25 +81,57 @@ public class CafeStranger : MonoBehaviour
         if (seated != null) seated.Stand();
         yield return null;
         anim.SetFloat("Speed", 0.5f); // blend tree: 0.5 = walk
-        foreach (var point in ExitPath)
-            while (Vector2.Distance(Flat2(transform.position), Flat2(point)) > 0.05f)
+        foreach (var point in ExitPath) yield return WalkTo(point);
+
+        // Along the sidewalk to the nearest street corner, then on like any other pedestrian.
+        var city = FindFirstObjectByType<CityLife>();
+        if (city == null) { Destroy(gameObject); yield break; }
+        var (x, z, sx, sz) = NearestCorner(city);
+        yield return WalkTo(city.Node(x, z) + new Vector3(sx, 0, sz) * city.sidewalkOffset);
+        if (!CityLife.Movers.Contains(transform)) CityLife.Movers.Add(transform);
+        gameObject.AddComponent<CityPedestrian>().Begin(city, x, z, sx, sz);
+        Destroy(this); // the pedestrian walks from here; the laptop already went with them
+    }
+
+    IEnumerator WalkTo(Vector3 point)
+    {
+        while (Vector2.Distance(Flat2(transform.position), Flat2(point)) > 0.05f)
+        {
+            Vector3 here = transform.position;
+            Vector3 step = Vector3.MoveTowards(here, new Vector3(point.x, here.y, point.z), WalkSpeed * Time.deltaTime);
+            Vector3 dir = Flat(step - here);
+            if (dir != Vector3.zero) transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(dir), 8 * Time.deltaTime);
+            step.y = CityLife.GroundY(step);
+            transform.position = step;
+            yield return null;
+        }
+    }
+
+    // The sidewalk corner (an intersection and which of its four corners) closest to where they stand.
+    (int, int, int, int) NearestCorner(CityLife city)
+    {
+        var best = (0, 0, 1, 1);
+        float bestDistance = float.MaxValue;
+        for (int x = 0; x < city.roadX.Length; x++)
+            for (int z = 0; z < city.roadZ.Length; z++)
             {
-                Vector3 here = transform.position;
-                Vector3 step = Vector3.MoveTowards(new Vector3(here.x, here.y, here.z), new Vector3(point.x, here.y, point.z), WalkSpeed * Time.deltaTime);
-                Vector3 dir = Flat(step - here);
-                if (dir != Vector3.zero) transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(dir), 8 * Time.deltaTime);
-                step.y = CityLife.GroundY(step);
-                transform.position = step;
-                yield return null;
+                if (!city.HasNode(x, z)) continue;
+                for (int sx = -1; sx <= 1; sx += 2)
+                    for (int sz = -1; sz <= 1; sz += 2)
+                    {
+                        Vector3 corner = city.Node(x, z) + new Vector3(sx, 0, sz) * city.sidewalkOffset;
+                        float d = Vector2.Distance(Flat2(corner), Flat2(transform.position));
+                        if (d < bestDistance) { bestDistance = d; best = (x, z, sx, sz); }
+                    }
             }
-        Destroy(gameObject);
+        return best;
     }
 
     static Vector2 Flat2(Vector3 v) => new Vector2(v.x, v.z);
 
     void OnDestroy()
     {
-        CityLife.Movers.Remove(transform);
+        if (!leaving) CityLife.Movers.Remove(transform); // once walking the streets they stay a mover
         if (laptop != null) Destroy(laptop.gameObject);
     }
 }

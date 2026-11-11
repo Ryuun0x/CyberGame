@@ -25,6 +25,20 @@ public class ScreenFader : MonoBehaviour
         }
     }
 
+    public void SetBlack() => _image.color = Color.black;
+
+    // Fades to any darkness (0 = clear, 1 = black) in real time, so it also works while the phone pauses the game.
+    public IEnumerator FadeTo(float alpha, float seconds)
+    {
+        float from = _image.color.a;
+        for (float t = 0; t < 1; t += (PauseMenu.IsPaused ? 0 : Time.unscaledDeltaTime) / seconds)
+        {
+            _image.color = new Color(0, 0, 0, Mathf.Lerp(from, alpha, t));
+            yield return null;
+        }
+        _image.color = new Color(0, 0, 0, alpha);
+    }
+
     public IEnumerator FadeIn()
     {
         float t = 1;

@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 #if ENABLE_INPUT_SYSTEM
@@ -27,6 +27,10 @@ public class RaycastCrosshair : MonoBehaviour
     private Canvas _promptCanvas;
     private RaycastHit _hit;
     private bool _isHitting;
+    private StarterAssets.FirstPersonController _walking;
+    private IHoldInteractable _holding; // E went down on this, waiting to see if it's a tap or a hold
+    private float _holdTime;
+    private const float HOLD_SECONDS = 0.5f;
 
     void Start()
     {
@@ -44,6 +48,15 @@ public class RaycastCrosshair : MonoBehaviour
         if (_camera == null)
         {
             _camera = Camera.main;
+            return;
+        }
+
+        // No prompts (and no E) while the player can't walk: using the laptop, the phone, a cutscene.
+        // Otherwise the laptop camera would keep aiming at the laptop and show "Use Laptop".
+        if (_walking == null) _walking = GetComponentInParent<StarterAssets.FirstPersonController>();
+        if (_walking != null && !_walking.enabled)
+        {
+            HidePrompt();
             return;
         }
 
@@ -70,12 +83,23 @@ public class RaycastCrosshair : MonoBehaviour
                     : null;
                 bool isLocked = gate != null && !gate.IsAllowed();
 
-                ShowPrompt(interactable, gate, isLocked);
+                var hold = targetMB != null ? targetMB.GetComponent<IHoldInteractable>() : null;
+                bool canHold = hold != null && hold.CanHold && !isLocked;
+                ShowPrompt(interactable, gate, isLocked, canHold ? hold.HoldPrompt : null);
+
+                if (canHold)
+                {
+                    HandleHold(interactable, hold);
+                }
+                else
+                {
+                    _holding = null;
+                }
 
                 #if ENABLE_INPUT_SYSTEM
-                if (Keyboard.current.eKey.wasPressedThisFrame)
+                if (!canHold && Keyboard.current.eKey.wasPressedThisFrame)
                 #else
-                if (Input.GetKeyDown(KeyCode.E))
+                if (!canHold && Input.GetKeyDown(KeyCode.E))
                 #endif
                 {
                     if (isLocked)
@@ -101,8 +125,28 @@ public class RaycastCrosshair : MonoBehaviour
         }
     }
 
+    // Hold E on something with a second action (IHoldInteractable, e.g. pick up the laptop):
+    // released before HOLD_SECONDS = a normal tap (Interact), held that long = HoldInteract.
+    void HandleHold(IInteractable interactable, IHoldInteractable hold)
+    {
+        var e = Keyboard.current.eKey;
+        if (e.wasPressedThisFrame) { _holding = hold; _holdTime = 0f; }
+        if (_holding != hold) return;
+
+        if (e.isPressed)
+        {
+            _holdTime += Time.deltaTime;
+            if (_holdTime >= HOLD_SECONDS) { _holding = null; hold.HoldInteract(); }
+        }
+        else
+        {
+            _holding = null;
+            interactable.Interact();
+        }
+    }
+
     void ShowPrompt(IInteractable interactable,
-                    GatekeepRequirement gate, bool isLocked)
+                    GatekeepRequirement gate, bool isLocked, string holdPrompt = null)
     {
         // A missing prompt must never stop E from working, so bail out instead of throwing.
         if (promptPanel == null || _promptCanvas == null) return;
@@ -118,6 +162,8 @@ public class RaycastCrosshair : MonoBehaviour
         // Override prompt text if locked and override is set
         if (isLocked && gate != null && !string.IsNullOrEmpty(gate.lockedPromptOverride))
             actionText = gate.lockedPromptOverride;
+        if (holdPrompt != null)
+            actionText += $"  <alpha=#99>·  Hold: {holdPrompt}";
 
         // Update text and color
         if (promptActionText != null)
@@ -126,8 +172,17 @@ public class RaycastCrosshair : MonoBehaviour
             promptActionText.color = isLocked ? lockedPromptColor : Color.white;
         }
 
-        // Anchor to the center of what the ray hit, not the pivot (a door's pivot is on its hinge)
-        Vector3 center = _hit.collider != null ? _hit.collider.bounds.center : targetMB.transform.position;
+        // Anchor to the center of the WHOLE object (all its colliders), not just the part the ray hit:
+        // the laptop's screen and keyboard are separate colliders and the prompt jumped between them.
+        // (Not the pivot either: a door's pivot is on its hinge.)
+        Vector3 center = targetMB.transform.position;
+        bool any = false;
+        Bounds whole = default;
+        foreach (var c in targetMB.GetComponentsInChildren<Collider>())
+        {
+            if (!any) { whole = c.bounds; any = true; } else whole.Encapsulate(c.bounds);
+        }
+        if (any) center = whole.center;
         Vector3 worldPos = center + offset;
         Vector3 screenPos = _camera.WorldToScreenPoint(worldPos);
 
@@ -146,10 +201,12 @@ public class RaycastCrosshair : MonoBehaviour
 
         promptPanel.anchoredPosition = localPoint;
         promptPanel.gameObject.SetActive(true);
+        if (!isLocked) Hints.Show("interact", "hand", "Interact", $"Press {Hints.Cap("E")} to use what you're looking at", UnityEngine.InputSystem.Key.E);
     }
 
     void HidePrompt()
     {
+        _holding = null; // looked away mid-hold: no tap or pick-up later
         if (promptPanel != null)
             promptPanel.gameObject.SetActive(false);
     }
@@ -158,4 +215,12 @@ public class RaycastCrosshair : MonoBehaviour
 public interface IInteractable
 {
     void Interact();
+}
+
+// A second action for holding E instead of tapping it (next to the object's IInteractable).
+public interface IHoldInteractable
+{
+    bool CanHold { get; }
+    string HoldPrompt { get; }
+    void HoldInteract();
 }

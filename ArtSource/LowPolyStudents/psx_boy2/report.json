@@ -1,0 +1,82 @@
+{
+ "tris": 2240,
+ "ik_miss": {
+  "PSX_Boy2_Idle": 0.0,
+  "PSX_Boy2_Walk": 0.0094,
+  "PSX_Boy2_Run": 0.0
+ },
+ "glb": {
+  "file": "PSX_Boy2.glb",
+  "size_kb": 422.5,
+  "armatures": [
+   [
+    "PSX_Boy2_Rig.001",
+    24
+   ]
+  ],
+  "meshes": [
+   [
+    "PSX_Boy2_Body.001",
+    582,
+    1,
+    true,
+    24
+   ],
+   [
+    "PSX_Boy2_Clothes.001",
+    620,
+    1,
+    true,
+    24
+   ],
+   [
+    "PSX_Boy2_Face.001",
+    6,
+    2,
+    true,
+    24
+   ],
+   [
+    "PSX_Boy2_Hair.001",
+    1030,
+    1,
+    true,
+    24
+   ],
+   [
+    "Icosphere",
+    80,
+    0,
+    false,
+    0
+   ]
+  ],
+  "materials": [
+   "PSX_Boy2.001",
+   "PSX_Boy2_Mouth.001",
+   "PSX_Boy2_Pupil.001"
+  ],
+  "clips": {
+   "Idle": {
+    "frames": 84.0,
+    "seconds": 2.8,
+    "channels": 240
+   },
+   "Run": {
+    "frames": 17.6,
+    "seconds": 0.587,
+    "channels": 240
+   },
+   "Walk": {
+    "frames": 24.0,
+    "seconds": 0.8,
+    "channels": 240
+   }
+  },
+  "max_bone_offset_mid_clip_m": {
+   "Idle": 0.171,
+   "Run": 0.497,
+   "Walk": 0.314
+  }
+ }
+}

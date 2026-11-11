@@ -40,9 +40,10 @@ public static class StoryTools
         if (ObjectiveManager.Instance != null) ObjectiveManager.Instance.CompleteSubTask(index, 0);
     }
 
+    // Real-time wait that stands still while the pause menu is open.
     public static IEnumerator Wait(float seconds)
     {
-        for (float t = 0; t < seconds; t += Time.unscaledDeltaTime) yield return null;
+        for (float t = 0; t < seconds; t += PauseMenu.IsPaused ? 0 : Time.unscaledDeltaTime) yield return null;
     }
 
     public static bool PlayerCanMove
@@ -58,14 +59,29 @@ public static class StoryTools
 
     static PhoneManager phone;
 
-    // Opens the phone and locks it open (Tab/Esc can't close it during a story moment).
-    public static PhoneStory OpenPhone()
+    // The phone buzzes (a notification banner and a badge) and the story waits until she picks it up herself
+    // (Tab). It never opens on its own; ignoring it, she mentions it now and then. Once open it is locked open
+    // (Tab/Esc can't close it) for the story moment. Then use StoryPhone.
+    public static IEnumerator PickUpPhone(string app, string preview)
     {
         phone = Object.FindFirstObjectByType<PhoneManager>();
-        phone.TryOpenPhone();
+        PhoneNotifications.Show(app, preview);
+        Hints.ShowUntil("phone-check", "phone", "New notification", $"Press {Hints.Cap("TAB")} to check your phone",
+            () => phone.IsOpen, now: true);
+        float nextReminder = Time.time + 20f;
+        while (!phone.IsOpen)
+        {
+            if (Time.time > nextReminder && PlayerCanMove)
+            {
+                Say("My phone keeps buzzing... (Tab)", 3f);
+                nextReminder = Time.time + 20f;
+            }
+            yield return null;
+        }
         phone.Locked = true;
-        return phone.phoneCanvas.GetComponentInChildren<PhoneStory>(true);
     }
+
+    public static PhoneStory StoryPhone => phone.phoneCanvas.GetComponentInChildren<PhoneStory>(true);
 
     public static void ClosePhone()
     {
@@ -76,7 +92,7 @@ public static class StoryTools
 
     // The phone's home screen script (it owns the Messages screen).
     public static PhoneHomeScreen PhoneHome =>
-        Object.FindFirstObjectByType<PhoneManager>().phoneCanvas.GetComponentInChildren<PhoneHomeScreen>(true);
+        Object.FindFirstObjectByType<PhoneManager>(FindObjectsInactive.Include).phoneCanvas.GetComponentInChildren<PhoneHomeScreen>(true);
 
     // ── Laptop ──
 

@@ -1,0 +1,261 @@
+<title>CADSNET Use Cases</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column; each diagram sits in its own scrollable figure with a legend under it. */
+:root {
+  --bg: #f4f6f8;
+  --paper: #ffffff;
+  --ink: #17212b;
+  --muted: #5b6875;
+  --line: #9aa7b4;
+  --accent: #1f5fae;
+  --threat: #b3261e;
+  --threat-bg: #fbe9e7;
+  --case-bg: #eef3fa;
+  --rule: #dde3ea;
+  --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", Roboto, sans-serif;
+  --mono: "IBM Plex Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f151b; --paper: #161e26; --ink: #e4eaf0; --muted: #9aa8b6; --line: #5d6b79;
+    --accent: #7fb0f0; --threat: #ff8a7e; --threat-bg: #3a1f1d; --case-bg: #1d2a38; --rule: #26313c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f151b; --paper: #161e26; --ink: #e4eaf0; --muted: #9aa8b6; --line: #5d6b79;
+  --accent: #7fb0f0; --threat: #ff8a7e; --threat-bg: #3a1f1d; --case-bg: #1d2a38; --rule: #26313c;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.55; }
+main {
+  max-width: 1080px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 64px;
+  display: grid; gap: 40px;
+}
+header { display: grid; gap: 8px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+h1 { font-family: var(--display); font-weight: 800; font-size: clamp(28px, 5vw, 40px); line-height: 1.1; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 22px; margin: 0; text-wrap: balance; }
+p { margin: 0; max-width: 68ch; }
+.lede { color: var(--muted); }
+section { display: grid; gap: 14px; }
+figure { margin: 0; background: var(--paper); border: 1px solid var(--rule); border-radius: 6px; overflow-x: auto; padding: 20px; }
+figure svg { display: block; margin: 0 auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+.swatch { width: 26px; height: 14px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--case-bg); }
+.swatch.threat { border-color: var(--threat); background: var(--threat-bg); }
+.swatch.line { height: 0; border-radius: 0; border: 0; border-top: 1.5px solid var(--line); }
+.swatch.attack { height: 0; border-radius: 0; border: 0; border-top: 1.5px dashed var(--threat); }
+code { font-family: var(--mono); font-size: 13px; }
+.note { font-size: 13px; color: var(--muted); }
+
+/* use case SVG */
+.uc-boundary { fill: none; stroke: var(--ink); stroke-width: 1.5; }
+.uc-title { fill: var(--ink); font: 600 15px var(--display); }
+.uc-group { fill: var(--accent); font: 500 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.uc-case { fill: var(--case-bg); stroke: var(--line); stroke-width: 1.4; }
+.uc-case.threat { fill: var(--threat-bg); stroke: var(--threat); }
+.uc-text { fill: var(--ink); font: 400 13px var(--body); }
+.uc-sub { fill: var(--threat); font: 500 10.5px var(--mono); }
+.uc-link { stroke: var(--line); stroke-width: 1; fill: none; }
+.uc-attack { stroke: var(--threat); stroke-width: 1; stroke-dasharray: 5 4; fill: none; }
+.uc-actor { stroke: var(--ink); stroke-width: 2; fill: none; }
+.uc-actor-label { fill: var(--ink); font: 600 13px var(--body); }
+.uc-actor-sub { fill: var(--muted); font: 400 12px var(--body); }
+.uc-divider { stroke: var(--rule); stroke-width: 1; stroke-dasharray: 3 4; }
+
+/* flowchart */
+.flow pre.mermaid { margin: 0; background: transparent; font-family: var(--body); }
+</style>
+
+<main>
+  <header>
+    <div class="eyebrow">CADSNET · System design</div>
+    <h1>Use case diagram and gameplay flow</h1>
+    <p class="lede">What the player can do in CADSNET, which of those actions an attacker targets, and the order the story plays in, with each choice and what it leads to. Based on the build of 3 November 2026.</p>
+  </header>
+
+  <section>
+    <h2>Use case diagram</h2>
+    <p>The player (Alice, the student) is the main actor. The attacker group Ghostline is the second actor: it is involved in every use case where the player meets a cyber threat. Those use cases are shaded red and name the threat under them.</p>
+    <figure><svg id="uc" role="img" aria-labelledby="uc-desc"><desc id="uc-desc">UML use case diagram: the Player actor linked to 22 use cases inside the CADSNET system boundary, grouped into Game, Chapter 1 at home, Chapter 1 at the café, Chapter 2 and End. The Attacker (Ghostline) actor is linked to the 8 threat use cases.</desc></svg></figure>
+    <div class="legend">
+      <span><i class="swatch"></i>Use case</span>
+      <span><i class="swatch threat"></i>Threat encounter</span>
+      <span><i class="swatch line"></i>Actor takes part</span>
+      <span><i class="swatch attack"></i>Attacker is behind it</span>
+    </div>
+  </section>
+
+  <section class="flow">
+    <h2>Gameplay flowchart</h2>
+    <p>The story from the start menu to the final results. Diamonds are the player's choices. Red boxes are consequences that count as Compromised on the results screen; green boxes are Safe.</p>
+    <figure>
+<pre class="mermaid">
+flowchart TD
+  start([Start Menu]) --> newgame{New game or Continue?}
+  newgame -->|New game| pro[Prologue, 11:47 PM:<br/>Kai's texts, Ghostline on the TV news]
+  newgame -->|Continue| ch2
+  pro --> wake[9:04 AM: wake up, first person]
+  wake --> try[Try to send the thesis from the laptop]
+  try --> offline[No internet at home]
+  offline --> drive[Find the flash drive in the living room]
+  drive --> plug[Open laptop, press F to plug it in]
+  plug --> backup{Back up the thesis?}
+  backup -->|USB and/or Drive| eject[Eject in taskbar, press F to unplug]
+  backup -->|Skip| nobackup[No backup]:::bad
+  eject --> mfa
+  nobackup --> mfa
+  mfa{Turn on 2FA on the phone?}
+  mfa -->|Yes| mfaon[2FA on]:::good
+  mfa -->|No| mfaoff[2FA off]:::bad
+  mfaon --> walk
+  mfaoff --> walk
+  walk[Walk to the café with the phone map] --> order[Order at the counter:<br/>receipt shows the Wi-Fi password]
+  order --> wifi{Which network?}
+  wifi -->|CafeWifi67 Secured + receipt password| real[Real café Wi-Fi]:::good
+  wifi -->|CafeWifi67 Open| twin[Evil twin sign-in page]
+  twin --> login{Type the school login?}
+  login -->|Yes| stolen[Login stolen]:::bad
+  login -->|No, go back| wifi
+  real --> mail
+  stolen --> mail
+  mail[Open school mail to send the thesis] --> update{Browser update popup}
+  update -->|Close it| send
+  update -->|Download| malware[Fake update installed]:::bad
+  malware --> send
+  send[Send the thesis] --> walkout[Walk out of the café]
+  walkout --> res1[[Chapter 1 results]]
+  res1 --> ch2
+
+  ch2[Chapter 2, 11:40 PM: back home] --> wasstolen{Was the login stolen?}
+  wasstolen -->|No| kai
+  wasstolen -->|Yes, 2FA on| deny[Phone: 'Was this you?' → No]:::good
+  wasstolen -->|Yes, 2FA off| hijack[Password changed:<br/>account hijacked]:::bad
+  deny --> kai
+  hijack --> kai
+  kai{Kai's account asks for ₱1,000}
+  kai -->|Reply| reply['Yes it's me' proves nothing]
+  reply --> kai
+  kai -->|Call Kai| realkai[Real Kai: 'That's not me!']:::good
+  kai -->|Send money| lost[Money goes to the scammer]:::bad
+  realkai --> locked
+  lost --> locked
+  locked{Installed the fake update?}
+  locked -->|No| shop
+  locked -->|Yes| ransom{Files locked for ransom}
+  ransom -->|Restore from USB or Drive| restored[Thesis restored]:::good
+  ransom -->|Pay| pay[Asks ₱10,000 more,<br/>nothing unlocks]:::bad
+  ransom -->|Wipe| wiped[Files gone]:::bad
+  restored --> shop
+  pay --> shop
+  wiped --> shop
+  shop{ShopHub sign-up password}
+  shop -->|New long password| seller
+  shop -->|Reuse school password| reuse[ShopHub leak:<br/>school account attacked again]:::bad
+  reuse --> seller
+  seller{Pick a seller}
+  seller -->|Official store| official[Item arrives]:::good
+  seller -->|gadget.deals.ph| scam[Paid upfront, item never comes]:::bad
+  official --> report
+  scam --> report
+  report[Report the incident] --> bed[Go to bed: 'Two weeks later...' epilogue]
+  bed --> final[[Final results]]
+
+  classDef good fill:#dff3e6,stroke:#2e7d4f,color:#123d24;
+  classDef bad fill:#fde2e2,stroke:#c0392b,color:#5a1010;
+</pre>
+    </figure>
+    <p class="note">Not shown because they are not built yet: carrying your own laptop from home to the café (reviewer item 8), the antivirus prompt on the fake update (item 12) and the S3 smishing text on the walk to the café.</p>
+  </section>
+</main>
+
+<script>
+(function () {
+  const groups = [
+    ["Game", [
+      ["Start or continue the game"], ["Change settings"], ["Pause the game"]]],
+    ["Chapter 1 · Morning at home", [
+      ["Watch the prologue"], ["Explore the house and read objectives"], ["Pick up the flash drive"],
+      ["Plug in / eject the flash drive"], ["Back up the thesis (USB or Drive)"], ["Turn on 2FA on the phone"]]],
+    ["Chapter 1 · The café", [
+      ["Walk to the café with the phone map"], ["Order and get the receipt"],
+      ["Connect to the café Wi-Fi", "Evil twin network"], ["Sign in on the Wi-Fi page", "Credential theft"],
+      ["Handle the browser update popup", "Fake update (malware)"], ["Email the thesis to the adviser"]]],
+    ["Chapter 2 · That night", [
+      ["Respond to the sign-in alert", "Stolen password used"], ["Answer Kai's money request", "Hijacked friend account"],
+      ["Recover the locked files", "Ransomware"], ["Make a ShopHub password", "Password reuse"],
+      ["Choose an online seller", "Fake online seller"], ["Report the incident"]]],
+    ["End", [["View results and lessons"]]]
+  ];
+
+  const W = 1000, cx = 500, rx = 200, ry = 21, row = 50, head = 34, top = 64;
+  const playerX = 86, attackX = 914;
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.getElementById("uc");
+  const el = (tag, attrs, text) => {
+    const n = document.createElementNS(ns, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    if (text != null) n.textContent = text;
+    svg.appendChild(n);
+    return n;
+  };
+
+  // lay out rows
+  const cases = []; let y = top;
+  groups.forEach(([label, items], gi) => {
+    if (gi > 0) y += 6;
+    cases.push({ group: label, y: y + 14 });
+    y += head;
+    items.forEach(([name, threat]) => { cases.push({ name, threat, y: y + ry }); y += row; });
+  });
+  const H = y + 24;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.setAttribute("width", W);
+
+  const midY = H / 2, handY = midY - 22;
+  // links first, so the shapes sit on top
+  cases.filter(c => c.name).forEach(c => {
+    el("line", { class: "uc-link", x1: playerX + 18, y1: handY, x2: cx - rx, y2: c.y });
+    if (c.threat) el("line", { class: "uc-attack", x1: attackX - 18, y1: handY, x2: cx + rx, y2: c.y });
+  });
+
+  el("rect", { class: "uc-boundary", x: 250, y: 20, width: 500, height: H - 32, rx: 4 });
+  el("text", { class: "uc-title", x: 266, y: 44 }, "CADSNET game");
+
+  cases.forEach(c => {
+    if (c.group) {
+      el("line", { class: "uc-divider", x1: 262, y1: c.y - 12, x2: 738, y2: c.y - 12 });
+      el("text", { class: "uc-group", x: cx, y: c.y + 4, "text-anchor": "middle" }, c.group);
+      return;
+    }
+    el("ellipse", { class: "uc-case" + (c.threat ? " threat" : ""), cx, cy: c.y, rx: rx - 18, ry });
+    el("text", { class: "uc-text", x: cx, y: c.threat ? c.y - 2 : c.y + 4.5, "text-anchor": "middle" }, c.name);
+    if (c.threat) el("text", { class: "uc-sub", x: cx, y: c.y + 12, "text-anchor": "middle" }, c.threat);
+  });
+
+  // ellipses are rx-18 wide, so pull the links in to touch them
+  svg.querySelectorAll(".uc-link").forEach(l => l.setAttribute("x2", cx - rx + 18));
+  svg.querySelectorAll(".uc-attack").forEach(l => l.setAttribute("x2", cx + rx - 18));
+
+  const actor = (x, label, sub) => {
+    const t = midY - 46;
+    el("circle", { class: "uc-actor", cx: x, cy: t, r: 11 });
+    el("line", { class: "uc-actor", x1: x, y1: t + 11, x2: x, y2: t + 46 });
+    el("line", { class: "uc-actor", x1: x - 18, y1: t + 24, x2: x + 18, y2: t + 24 });
+    el("line", { class: "uc-actor", x1: x, y1: t + 46, x2: x - 15, y2: t + 70 });
+    el("line", { class: "uc-actor", x1: x, y1: t + 46, x2: x + 15, y2: t + 70 });
+    el("text", { class: "uc-actor-label", x, y: t + 92, "text-anchor": "middle" }, label);
+    el("text", { class: "uc-actor-sub", x, y: t + 109, "text-anchor": "middle" }, sub);
+  };
+  actor(playerX, "Player", "Alice, the student");
+  actor(attackX, "Attacker", "Ghostline");
+})();
+</script>

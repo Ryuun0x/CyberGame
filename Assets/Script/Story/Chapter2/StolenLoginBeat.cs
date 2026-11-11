@@ -16,7 +16,9 @@ public static class StolenLoginBeat
 
     public static IEnumerator Play()
     {
-        var phone = OpenPhone();
+        if (Progress.is2FAEnabled) yield return PickUpPhone("Authenticator", "Sign-in request: Was this you?");
+        else yield return PickUpPhone("Goggle", "Your Goggle account password was changed.");
+        var phone = StoryPhone;
         if (Progress.is2FAEnabled)
         {
             yield return AskWasThisYou(phone);

@@ -66,7 +66,8 @@ public class PhoneManager : MonoBehaviour
     {
         if (IsOpen) return true;
         if (phoneCanvas == null || Time.timeScale == 0 || (firstPersonController != null && !firstPersonController.enabled)) return false;
-        if (requireFlashDrive && (GameProgressManager.Instance == null || !GameProgressManager.Instance.hasFlashDrive))
+        if (requireFlashDrive && (GameProgressManager.Instance == null
+            || (GameProgressManager.Instance.chapter < 2 && !GameProgressManager.Instance.hasFlashDrive)))
         {
             if (NarrationManager.Instance != null) NarrationManager.Instance.Show(blockedNarration);
             return false;

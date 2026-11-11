@@ -11,7 +11,8 @@ public class ThreatLog : MonoBehaviour
         public ThreatOutcome outcome;
     }
 
-    public static ThreatLog Instance { get; private set; }
+    // Placed on the GameManager object (next to GameProgressManager), which survives scene loads.
+    public static ThreatLog Instance;
 
     readonly List<Entry> _entries = new List<Entry>();
     readonly HashSet<string> _exposed = new HashSet<string>();
@@ -20,12 +21,15 @@ public class ThreatLog : MonoBehaviour
     public IReadOnlyList<Entry> Entries => _entries;
     public IReadOnlyCollection<string> Pending => _pending;
 
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-    static void Bootstrap()
+    void Awake()
     {
-        var go = new GameObject("ThreatLog");
-        DontDestroyOnLoad(go);
-        Instance = go.AddComponent<ThreatLog>();
+        // Same singleton rule as GameProgressManager: keep the first one, drop copies from reloaded scenes.
+        if (Instance != null && Instance != this)
+        {
+            Destroy(this);
+            return;
+        }
+        Instance = this;
     }
 
     public void MarkExposed(string id)

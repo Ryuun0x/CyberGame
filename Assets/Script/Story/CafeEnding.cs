@@ -2,14 +2,17 @@ using System.Collections;
 using StarterAssets;
 using UnityEngine;
 
-// Chapter 1 wrap-up at the café (added by CafeZone):
-// - an invisible wall in the doorway keeps the player inside until the thesis is submitted;
-// - walking out after submitting: a scam text from Kai's hijacked account, narration, fade, debrief.
+// Chapter 1 wrap-up at the café (on the CafeZone object):
+// - an invisible wall in the doorway (the "CafeExitWall" object) keeps the player inside until the thesis is submitted;
+// - walking out after submitting: the phone buzzes (a text from Kai's hijacked account), she picks it up (Tab),
+//   reads it, narration, fade, debrief.
 public class CafeEnding : MonoBehaviour
 {
     const string BlockedNarration = "I still need to submit my thesis.";
 
-    BoxCollider wall;
+    [Tooltip("The invisible wall in the café doorway (CafeExitWall). Switched on only while the player is inside and hasn't submitted.")]
+    public BoxCollider wall;
+
     Vector3 doorCenter, inward;
     CharacterController player;
     float nextNag;
@@ -28,11 +31,6 @@ public class CafeEnding : MonoBehaviour
         bool facesX = b.size.x < b.size.z;
         inward = facesX ? new Vector3(Mathf.Sign(zone.bounds.center.x - b.center.x), 0, 0)
                         : new Vector3(0, 0, Mathf.Sign(zone.bounds.center.z - b.center.z));
-        // Just inside the frame, clear of the door leaf (it swings outward).
-        var go = new GameObject("CafeExitWall");
-        go.transform.position = doorCenter + inward * 0.25f;
-        wall = go.AddComponent<BoxCollider>();
-        wall.size = facesX ? new Vector3(0.2f, b.size.y + 0.5f, b.size.z + 0.4f) : new Vector3(b.size.x + 0.4f, b.size.y + 0.5f, 0.2f);
         wall.enabled = false;
     }
 
@@ -70,13 +68,25 @@ public class CafeEnding : MonoBehaviour
     {
         yield return new WaitForSeconds(1.5f);
 
-        // View-only text on the real phone. The phone pauses time, so wait in real time.
+        // The phone buzzes: a banner and a badge. She picks it up herself (Tab); after a while it opens anyway.
+        const string KaiText = "Bes, emergency. Send ₱1,000 please.";
+        PhoneNotifications.Show("Kai", KaiText);
         var phone = FindFirstObjectByType<PhoneManager>();
         var home = phone != null && phone.phoneCanvas != null ? phone.phoneCanvas.GetComponentInChildren<PhoneHomeScreen>(true) : null;
-        if (home != null && phone.TryOpenPhone()) home.ShowMessage("Kai", "Bes, emergency. Send ₱1,000 please.");
+        if (phone != null)
+        {
+            Hints.ShowUntil("kai-text", "phone", "New message", $"Press {Hints.Cap("TAB")} to check your phone", () => phone.IsOpen, now: true);
+            for (float t = 0; t < 12f && !phone.IsOpen; t += Time.unscaledDeltaTime) yield return null;
+            if (!phone.IsOpen) phone.TryOpenPhone();
+        }
+        if (home != null && phone.IsOpen) home.ShowMessage("Kai", KaiText);
+
+        // The phone pauses time, so wait in real time.
         yield return new WaitForSecondsRealtime(3f);
         if (NarrationManager.Instance != null) NarrationManager.Instance.Show("…Kai said not to trust messages from them.", 3f);
-        yield return new WaitForSecondsRealtime(4f);
+        yield return new WaitForSecondsRealtime(3.5f);
+        if (NarrationManager.Instance != null) NarrationManager.Instance.Show("I'll deal with this when I get home.", 3f);
+        yield return new WaitForSecondsRealtime(3.5f);
         if (phone != null) phone.ClosePhone();
 
         var controller = FindFirstObjectByType<FirstPersonController>();
@@ -86,4 +96,5 @@ public class CafeEnding : MonoBehaviour
         var desktop = FindFirstObjectByType<LaptopDesktop>(FindObjectsInactive.Include);
         if (desktop != null) desktop.EndChapter();
     }
+
 }
