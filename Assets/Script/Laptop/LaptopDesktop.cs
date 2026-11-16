@@ -69,7 +69,7 @@ public class LaptopDesktop : MonoBehaviour
     {
         // Update taskbar clock
         if (timeText != null)
-            timeText.text = System.DateTime.Now.ToString("h:mm tt");
+            timeText.text = GameClock.Now;
 
         // Café: the 'No Internet' X follows the laptop's own connection
         if (wifi != null && noInternetIcon != null)

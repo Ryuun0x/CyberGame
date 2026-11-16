@@ -93,6 +93,7 @@ public class PauseMenu : MonoBehaviour
     public void Pause()
     {
         IsPaused = true;
+        Sfx.Play("pause");
         Time.timeScale = 0;
 
         // Stop the player and the camera. The look input is cleared too, so the camera
@@ -124,6 +125,7 @@ public class PauseMenu : MonoBehaviour
     // Called by the Resume button, and by pressing Esc again.
     public void Resume()
     {
+        Sfx.Play("resume");
         pauseScreen.SetActive(false);
         blurVolume.SetActive(false);
         if (cameraData != null) cameraData.renderPostProcessing = cameraHadPostProcessing;

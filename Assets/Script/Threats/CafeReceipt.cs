@@ -25,7 +25,7 @@ public class CafeReceipt : MonoBehaviour
 
     public void Show()
     {
-        orderLine.text = "Order #067  ·  " + System.DateTime.Now.ToString("h:mm tt");
+        orderLine.text = "Order #067  ·  " + GameClock.Now;
         paper.SetActive(true);
         IsOpen = true;
         openedFrame = Time.frameCount;

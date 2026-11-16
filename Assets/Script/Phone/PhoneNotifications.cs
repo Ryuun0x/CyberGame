@@ -56,6 +56,8 @@ public class PhoneNotifications : MonoBehaviour
     void Open(string app, string message, (string label, Action action)[] buttons)
     {
         unread++;
+        Sfx.Play("notify");
+        Sfx.Play("buzz", 0.6f);
         appText.text = app;
         messageText.text = message;
         for (int i = 0; i < actionButtons.Length; i++)
