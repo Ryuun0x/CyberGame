@@ -7,8 +7,11 @@ Sets:
   signal  Ghostline listening in: radio static, low data chirps, a sub thump, the signal dropping and locking in
   glass   a dark phone screen: soft glass taps (deeper), dim bell tones, airy whooshes
   pulse   tension in the body: muffled heartbeat thumps, held and released breath
+  subtle  barely there: quiet, short, dull (a fingertip, a light switch, cloth, one soft felt note)
+  clips   the user's AudioClip download: a real click and switch, a diary, cloth, a chirp, a pencil scribble
   clicky  crisp and tactile: keyboard-like clicks with a low thock, real switches, latches, a ratchet
-Also writes preview/variant_click_options.wav: other recorded clicks for the clicky set's click.
+Also writes preview/variant_click_options.wav (other clicks for the clicky set) and
+preview/variant_pause_options.wav (pause/resume pairs, PAUSE_OPTIONS).
 """
 import os
 import sys
@@ -202,7 +205,83 @@ def clicky():
     }
 
 
-SETS = {"night": night, "signal": signal, "glass": glass, "pulse": pulse, "clicky": clicky}
+# ---- subtle: barely there -------------------------------------------------------------------------------------
+def soft(name, pitch=1.0, cutoff=2500, s=0.15):
+    """A sound from the downloaded packs (ArtSource/Sounds/packs), starting right at its onset, dulled and short."""
+    from audition_packs import find
+    y = pk.load(find(name))
+    y = y[np.argmax(np.abs(y) > 0.05 * np.max(np.abs(y))):]
+    y = np.interp(np.arange(0, len(y), pitch), np.arange(len(y)), y)
+    return cut(norm(pk.lowpass(y, cutoff)), s)
+
+
+def subtle():
+    """Quiet, short and dull: felt more than heard. No clicks (every sound fades in over a few milliseconds, so there
+    is no sharp edge), no tones that sing out, almost no tails."""
+    attack = lambda y, a=0.012: y * np.minimum(np.arange(len(y)) / (R * a), 1)
+    felt = lambda n, s=0.6: attack(pk.lowpass(ms.pluck(note(n), s, 0.985, 0.1), 1200), 0.01)
+    hush = lambda s, a, r: norm(band(s, 150, 900)) * env(s, a, r)
+    # A soft low "hm": a rounded tone with a breath of air around it, no edge.
+    hm = lambda n, s=0.14: pk.lowpass(mix(warm(note(n), s, 0.012, s / 3.5), hush(s, 0.015, s / 4) * 0.25), 1400)
+    return {
+        "click": room(hm(14, 0.12), 0.04, 0.2),
+        "toggle_on": room(seq(hm(12, 0.1), hm(16, 0.14), overlap=0.05), 0.05, 0.25),
+        "toggle_off": room(seq(hm(16, 0.1), hm(12, 0.14), overlap=0.05), 0.05, 0.25),
+        "pause": room(mix(hush(0.35, 0.03, 0.1) * 0.5, warm(note(0), 0.35, 0.01, 0.12) * 0.5), 0.06, 0.3),
+        "resume": room(mix(hush(0.3, 0.1, 0.08) * 0.5, warm(note(7), 0.3, 0.03, 0.1) * 0.5), 0.06, 0.3),
+        "phone_open": room(attack(soft("clothing_1", 1.0, 2000, 0.22), 0.03), 0.04, 0.2),
+        "phone_close": room(attack(soft("clothing_2", 0.95, 1800, 0.2), 0.03), 0.04, 0.2),
+        "notify": room(seq(felt(19, 0.5), felt(24, 0.6) * 0.8, overlap=0.38), 0.08, 0.4),
+        "objective": room(seq(felt(7, 0.7), felt(12, 0.9), overlap=0.55), 0.08, 0.5),
+    }
+
+
+# ---- clips: the user's AudioClip download (ArtSource/Sounds/packs/AudioClip), kept quiet and natural ---------------
+def clips():
+    soften = lambda y, a=0.004: y * np.minimum(np.arange(len(y)) / (R * a), 1)  # takes the sharpest edge off
+    return {
+        "click": room(soften(soft("click", 0.95, 3000, 0.12)), 0.04, 0.2),
+        # A real switch, a little higher for on and lower for off.
+        "toggle_on": room(soften(soft("fuse-box-switch", 1.1, 2600, 0.25)), 0.04, 0.2),
+        "toggle_off": room(soften(soft("fuse-box-switch", 0.9, 2200, 0.25)), 0.04, 0.2),
+        # Pause/resume: see PAUSE_OPTIONS (the diary's page flip was replaced).
+        "pause": PAUSE_OPTIONS[PAUSE][0](),
+        "resume": PAUSE_OPTIONS[PAUSE][1](),
+        # The phone comes out of a pocket and goes back in.
+        "phone_open": room(soft("cloth-grab-01", 1.0, 2500, 0.45), 0.04, 0.2),
+        "phone_close": room(soft("cloth-rustle-01", 1.05, 2300, 0.35), 0.04, 0.2),
+        "notify": room(soft("chirp", 0.95, 3500, 0.3), 0.06, 0.3),
+        # An objective done: a quick pencil scribble, like ticking it off a list.
+        "objective": room(soft("scribble", 1.0, 4000, 1.0), 0.05, 0.3),
+    }
+
+
+# Pause/resume pairs to choose from (preview/variant_pause_options.wav, in this order). PAUSE is the one in the game.
+_hush = lambda s, a, r: norm(band(s, 150, 900)) * env(s, a, r)
+_muffle = lambda f0, f1, s=0.4: room(norm(sweep(band(s, 80, 4000), f0, f1)) * env(s, 0.05, s / 3), 0.06, 0.3)
+PAUSE_OPTIONS = {
+    # a soft breath with a low warm tone: down for pause, a fifth up for resume (made here, no licence needed)
+    "soft tone": (lambda: room(mix(_hush(0.35, 0.03, 0.1) * 0.5, warm(note(0), 0.35, 0.01, 0.12) * 0.5), 0.06, 0.3),
+                  lambda: room(mix(_hush(0.3, 0.1, 0.08) * 0.5, warm(note(7), 0.3, 0.03, 0.1) * 0.5), 0.06, 0.3)),
+    # the world going muffled, then opening again (made here)
+    "muffle": (lambda: _muffle(2500, 150), lambda: _muffle(150, 2500)),
+    "tech blip": (lambda: room(soft("sci_fi_deselect", 0.9, 3000, 0.35), 0.05, 0.3),
+                  lambda: room(soft("sci_fi_select", 0.9, 3000, 0.35), 0.05, 0.3)),
+    "double click": (lambda: room(soft("click_double_off", 0.9, 3000, 0.3), 0.04, 0.2),
+                     lambda: room(soft("click_double_on", 0.9, 3000, 0.3), 0.04, 0.2)),
+    "power down/up": (lambda: room(soft("synth_shut_down", 1.0, 2500, 0.6), 0.06, 0.3),
+                      lambda: room(soft("synth_confirmation", 1.0, 2500, 0.5), 0.06, 0.3)),
+    "computer switch": (lambda: room(soft("computerswitch", 0.9, 2500, 0.35), 0.04, 0.2),
+                        lambda: room(soft("computerswitch", 1.05, 2800, 0.35), 0.04, 0.2)),
+}
+PAUSE = "soft tone"
+
+SETS = {"night": night, "signal": signal, "glass": glass, "pulse": pulse, "clicky": clicky, "subtle": subtle,
+        "clips": clips}
+# Quieter sets: their own peak levels, so they sit under the game instead of on top of it.
+QUIET = {"subtle": {"click": 0.16, "toggle_on": 0.18, "toggle_off": 0.18, "pause": 0.2, "resume": 0.2,
+                    "phone_open": 0.18, "phone_close": 0.17, "notify": 0.24, "objective": 0.24}}
+QUIET["clips"] = QUIET["subtle"]
 
 
 def finish(y):
@@ -212,19 +291,20 @@ def finish(y):
 if __name__ == "__main__":
     if sys.argv[1:] and sys.argv[1] in SETS:
         for name, y in SETS[sys.argv[1]]().items():
-            pk.write(f"{pk.OUT}/{name}.wav", finish(y), PEAK[name])
+            pk.write(f"{pk.OUT}/{name}.wav", finish(y), QUIET.get(sys.argv[1], PEAK)[name])
         print("installed", sys.argv[1])
         sys.exit()
     for set_name, make in SETS.items():
         sounds = make()
         assert list(sounds) == ORDER, set_name
+        peaks = QUIET.get(set_name, PEAK)
         parts = []
         for name in ORDER:
-            y = norm(finish(sounds[name])) * PEAK[name]
+            y = norm(finish(sounds[name])) * peaks[name]
             for _ in range(3 if name in ("click", "toggle_on", "toggle_off") else 1):
                 parts += [y, gap(0.35)]
             parts.append(gap(0.8))
-        pk.write(f"{pk.PREVIEW}/variant_{set_name}.wav", np.concatenate(parts), 0.45)
+        pk.write(f"{pk.PREVIEW}/variant_{set_name}.wav", np.concatenate(parts), max(peaks.values()))  # true level
         print(set_name, ", ".join(f"{n} {len(finish(sounds[n])) / R:.2f}s" for n in ORDER))
     # Other clicks to choose from for the clicky set, each three times.
     parts = []
@@ -233,3 +313,9 @@ if __name__ == "__main__":
         parts += [y, gap(0.3)] * 3 + [gap(0.9)]
     pk.write(f"{pk.PREVIEW}/variant_click_options.wav", np.concatenate(parts), 0.45)
     print("click options:", ", ".join(f"{i + 1}={n}" for i, (_, n) in enumerate(CLICK_OPTIONS)))
+    # Pause/resume pairs: each pause, then its resume, at the game's level.
+    parts = []
+    for pause, resume in PAUSE_OPTIONS.values():
+        parts += [norm(finish(pause())), gap(0.7), norm(finish(resume())), gap(1.4)]
+    pk.write(f"{pk.PREVIEW}/variant_pause_options.wav", np.concatenate(parts), QUIET["clips"]["pause"])
+    print("pause options:", ", ".join(f"{i + 1}={n}" for i, n in enumerate(PAUSE_OPTIONS)))

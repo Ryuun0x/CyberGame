@@ -41,6 +41,7 @@ public class SettingsMenu : MonoBehaviour
     public Slider master;
     public Slider music;
     public Slider sfx;
+    public Slider voice;
 
     [Header("Controls")]
     public Slider sensitivity;
@@ -61,6 +62,7 @@ public class SettingsMenu : MonoBehaviour
         master.SetValueWithoutNotify(GameSettings.Master);
         music.SetValueWithoutNotify(GameSettings.Music);
         sfx.SetValueWithoutNotify(GameSettings.Sfx);
+        if (voice != null) voice.SetValueWithoutNotify(GameSettings.Voice);
         sensitivity.SetValueWithoutNotify(GameSettings.Sensitivity);
         pathGuide.SetIsOnWithoutNotify(GameSettings.PathGuide);
         RefreshTexts();
@@ -140,6 +142,7 @@ public class SettingsMenu : MonoBehaviour
     public void SetMaster(float value) { GameSettings.Master = value; AudioListener.volume = value; }
     public void SetMusic(float value) { GameSettings.Music = value; }
     public void SetSfx(float value) { GameSettings.Sfx = value; }
+    public void SetVoice(float value) { GameSettings.Voice = value; }
 
     // ── Controls ──
 

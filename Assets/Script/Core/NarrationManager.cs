@@ -1,6 +1,7 @@
 using UnityEngine;
 using TMPro;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine.UI;
 
 public class NarrationManager : MonoBehaviour
@@ -37,19 +38,41 @@ public class NarrationManager : MonoBehaviour
         narrationBox.SetActive(false);
     }
 
-    void Start()
+    IEnumerator Start()
     {
-        // Only show the opening narration if the player hasn't progressed yet
-        if (GameProgressManager.Instance == null || !GameProgressManager.Instance.triedSubmitWithoutInternet)
-        {
-            NarrationManager.Instance.Show("Ugh... Thesis is due at noon. I better check if the file synced.");
-        }
+        // Only show the opening narration if the player hasn't progressed yet,
+        // and only once the opening cutscenes are over (it is voiced now, so it would be heard over them).
+        if (GameProgressManager.Instance != null && GameProgressManager.Instance.triedSubmitWithoutInternet) yield break;
+        yield return null; // the cutscenes start in their own Start
+        while (WakeUpSequence.Playing) yield return null;
+        Show("Ugh... Thesis is due at noon. I better check if the file synced.");
     }
+
+    // Lines wait for the voice of the line before to finish (a new line used to replace the old one at once,
+    // which would now cut the voice off mid-sentence). Without a voice playing, a new line still shows at once.
+    readonly Queue<(string message, float duration)> queue = new Queue<(string, float)>();
+    Coroutine runner, display;
+    string current;
 
     public void Show(string message, float duration = 4f)
     {
-        StopAllCoroutines();
-        StartCoroutine(ShowRoutine(message, duration));
+        if (message == current && Voice.Remaining > 0) return; // the same line again, e.g. pressing E twice
+        queue.Enqueue((message, duration));
+        if (runner == null) runner = StartCoroutine(RunQueue());
+    }
+
+    IEnumerator RunQueue()
+    {
+        while (queue.Count > 0)
+        {
+            while (Voice.Remaining > 0.05f) yield return null;
+            var (message, duration) = queue.Dequeue();
+            if (display != null) StopCoroutine(display);
+            current = message;
+            duration = Mathf.Max(duration, Voice.Play(message) + 0.4f); // stays up while the voice speaks
+            display = StartCoroutine(ShowRoutine(message, duration));
+        }
+        runner = null;
     }
 
     IEnumerator ShowRoutine(string message, float duration)
@@ -82,5 +105,6 @@ public class NarrationManager : MonoBehaviour
 
         yield return new WaitForSeconds(duration);
         narrationBox.SetActive(false);
+        current = null;
     }
 }

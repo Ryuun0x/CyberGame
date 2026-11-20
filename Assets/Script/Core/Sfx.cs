@@ -9,7 +9,8 @@ using UnityEngine.UI;
 /// volume from Settings. Starts by itself and survives scene loads; nothing to place in a scene.
 ///   - Every click on a UI button plays "click", every toggle "toggle_on"/"toggle_off" (found under the mouse,
 ///     so new buttons get it automatically).
-///   - Other moments call Sfx.Play("name"): pause/resume, phone_open/phone_close, notify, buzz, objective.
+///   - Other moments call Sfx.Play("name"): pause/resume, phone_open/phone_close, notify, buzz, objective,
+///     door_open/door_close (café door), door_through (the house door between scenes; ArtSource/Sounds/make_doors.py).
 /// </summary>
 public class Sfx : MonoBehaviour
 {

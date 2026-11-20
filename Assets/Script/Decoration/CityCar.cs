@@ -13,6 +13,7 @@ public class CityCar : MonoBehaviour
     bool turning;
     float t, length, speed, blockedFor, ignoreUntil;
     Transform[] wheels;
+    AudioSource engine; // soft tyres and engine, in 3D (Resources/City/engine, made by ArtSource/Sounds/make_city.py)
 
     public bool Begin(CityLife owner, int fromX, int fromZ, int toX, int toZ, float progress)
     {
@@ -29,6 +30,21 @@ public class CityCar : MonoBehaviour
         speed = CruiseSpeed;
         Place();
         CityLife.Movers.Add(transform);
+        var clip = Resources.Load<AudioClip>("City/engine");
+        if (clip != null)
+        {
+            engine = gameObject.AddComponent<AudioSource>();
+            engine.clip = clip;
+            engine.loop = true;
+            engine.spatialBlend = 1;
+            engine.rolloffMode = AudioRolloffMode.Linear; // heard from 30 m, full at 2 m
+            engine.minDistance = 2;
+            engine.maxDistance = 30;
+            engine.dopplerLevel = 0.5f; // a slight drop in pitch as it passes
+            engine.volume = 0;
+            engine.Play();
+            engine.time = Random.Range(0, clip.length); // cars side by side don't sound the same
+        }
         return true;
     }
 
@@ -83,6 +99,13 @@ public class CityCar : MonoBehaviour
             else { t = 1; speed = 0; }
         }
         Place();
+        if (engine != null)
+        {
+            // Louder and a little higher with speed; idling quietly at a stop. Faint from inside the café.
+            float pace = speed / CruiseSpeed;
+            engine.volume = (0.12f + 0.23f * pace) * GameSettings.Sfx * (CafeZone.PlayerInCafe ? 0.3f : 1);
+            engine.pitch = 0.85f + 0.2f * pace;
+        }
         // Spin about the car's right axis: the wheel meshes' own X axes don't all point the same way.
         foreach (var wheel in wheels) wheel.Rotate(transform.right, speed / 0.32f * Mathf.Rad2Deg * Time.deltaTime, Space.World);
     }

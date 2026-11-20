@@ -24,10 +24,13 @@ public class LaptopInteraction : MonoBehaviour, IInteractable
     public GameObject playerFollowCamera; // drag PlayerFollowCamera here
 
     private bool _isUsingLaptop = false;
+    public static bool InUse { get; private set; } // the player is at a laptop (Ambience plays its fan)
     private bool _isAnimating = false;
     private Vector3 _originalCamPos;
     private Quaternion _originalCamRot;
     private Camera _camera;
+
+    void OnDestroy() => InUse = false;
 
     void Start()
     {
@@ -72,7 +75,7 @@ public class LaptopInteraction : MonoBehaviour, IInteractable
         Hints.ShowUntil("laptop-close", "laptop", "Close laptop", $"Press {Hints.Cap("Esc")} to close the laptop",
             () => UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame || !_isUsingLaptop, now: true);
         Hints.ShowUntil("laptop-click", "mouse", "Laptop", "Click with the mouse to use apps and buttons", Hints.MouseClicked, now: true);
-        _isUsingLaptop = true;
+        _isUsingLaptop = InUse = true;
         _isAnimating = true;
 
         if (firstPersonController != null)
@@ -145,7 +148,7 @@ public class LaptopInteraction : MonoBehaviour, IInteractable
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
-        _isUsingLaptop = false;
+        _isUsingLaptop = InUse = false;
         _isAnimating = false;
 
     }

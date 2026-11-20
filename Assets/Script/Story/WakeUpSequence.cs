@@ -231,6 +231,7 @@ public class WakeUpSequence : MonoBehaviour
         {
             if (narrationText != null)
                 narrationText.text = line;
+            Voice.Play(line);
 
             yield return new WaitForSeconds(secondsBetweenLines);
         }
