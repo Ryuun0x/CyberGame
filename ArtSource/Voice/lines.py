@@ -11,6 +11,12 @@ Not voiced: Kai's texts (they are phone messages), captions like "Two weeks late
 A line the game shows without a voice file is logged in the Editor ("[Voice] no line for ..."), so it can be added here.
 """
 
+# Lines read slower than Chatterbox says them: subtitle text -> speed (0.8 = 25% longer, same pitch).
+SLOW = {
+    "Ugh... my head.": 0.8,
+    "Kai... I hope they're okay.": 0.8,
+}
+
 LINES = [
     # ---- Prologue: the night before (Prologue.cs) ------------------------------------------------------------
     ("Wait, what?? Are you okay?", "alice", "said", "[surprised] Wait, what?? [fear] Are you okay?"),
@@ -55,6 +61,25 @@ LINES = [
      "I should eject it first, or the files could get corrupted."),
     ("I should eject and unplug the flash drive first.", "alice", "thought", "I should eject and unplug the flash drive first."),
     ("I should bring my laptop with me.", "alice", "thought", "I should bring my laptop with me."),
+    # Phone apps, the first time each is opened (PhoneHomeScreen.Comment, 2026-11-21)
+    ("Ghostline again... people lost their accounts and their money. I need to be careful today.", "alice", "thought",
+     "[sigh] Ghostline again... people lost their accounts and their money. [fear] I need to be careful today."),
+    ("The school wants everyone to turn on 2FA. Kai said the same thing last night.", "alice", "thought",
+     "The school wants everyone to turn on two F A. Kai said the same thing last night."),
+    ("The school wants everyone on 2FA. Good thing I already set it up.", "alice", "thought",
+     "The school wants everyone on two F A. [happy] Good thing I already set it up."),
+    ("Nothing new from Kai since last night.", "alice", "thought", "[sigh] Nothing new from Kai since last night."),
+    # Guide lines (2026-11-20): leaving without a backup (ExitEntrance), stuck on the flash drive (LaptopUsbPort/Carry)
+    ("I haven't backed up my thesis yet. I should copy it to the flash drive before I go.", "alice", "thought",
+     "[sigh] I haven't backed up my thesis yet. I should copy it to the flash drive before I go."),
+    ("My thesis is only on this laptop. I should find my flash drive and back it up first.", "alice", "thought",
+     "My thesis is only on this laptop. I should find my flash drive and back it up first."),
+    ("Before I unplug the flash drive, I should eject it. The USB icon is at the bottom right of the screen, next to the Wi-Fi.",
+     "alice", "thought",
+     "Before I unplug the flash drive, I should eject it. The USB icon is at the bottom right of the screen, next to the Wi-Fi."),
+    ("It's safe to unplug now. (F)", "alice", "thought", "It's safe to unplug now."),
+    ("I still need to pull the flash drive out of the laptop.", "alice", "thought",
+     "I still need to pull the flash drive out of the laptop."),
     ("I don't need my phone right now. Let me focus on my thesis.", "alice", "thought",
      "I don't need my phone right now. [sigh] Let me focus on my thesis."),
     ("I can't do that right now.", "alice", "thought", "I can't do that right now."),
@@ -120,9 +145,9 @@ LINES = [
     ("What a day... At least I reported them.", "alice", "thought", "[sigh] What a day... At least I reported them."),
 
     # ---- Epilogue, two weeks later (BedtimeBeat.EpilogueLines) ----------------------------------------------------
-    ("The police took down Ghostline's accounts. My report connected the fake Wi-Fi, the hacked accounts and the fake shop.",
+    ("The authorities took down Ghostline's accounts. My report connected the fake Wi-Fi, the hacked accounts and the fake shop.",
      "alice", "thought",
-     "[happy] The police took down Ghostline's accounts. My report connected the fake Wi-Fi, the hacked accounts and the fake shop."),
+     "[happy] The authorities took down Ghostline's accounts. My report connected the fake Wi-Fi, the hacked accounts and the fake shop."),
     ("Ghostline's accounts were taken down after the reports.", "alice", "thought", "Ghostline's accounts were taken down after the reports."),
     ("Nothing came of the report. And yesterday a new \"free Wi-Fi\" network showed up at another café...", "alice", "thought",
      "[sigh] Nothing came of the report. [fear] And yesterday a new free Wi-Fi network showed up at another café..."),

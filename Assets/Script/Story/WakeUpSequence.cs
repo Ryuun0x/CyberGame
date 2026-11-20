@@ -175,6 +175,8 @@ public class WakeUpSequence : MonoBehaviour
     {
         var crosshair = FindFirstObjectByType<RaycastCrosshair>(FindObjectsInactive.Include);
         if (crosshair != null && crosshair.crosshairDot != null) crosshair.crosshairDot.gameObject.SetActive(show);
+        // The "Press E" prompt too: the player (and its crosshair script, which normally hides it) is off during the shots.
+        if (!show && crosshair != null && crosshair.promptPanel != null) crosshair.promptPanel.gameObject.SetActive(false);
     }
 
     IEnumerator Blink()

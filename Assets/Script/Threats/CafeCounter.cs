@@ -3,8 +3,9 @@ using StarterAssets;
 using UnityEngine;
 
 // Café counter: ordering a drink hands over a receipt printed with the real Wi-Fi name and password.
-// The first order takes a moment: while the drink is made, the camera pans slowly to the hooded stranger at his
-// laptop, holds on him in silence (no line, so nobody is accused; no logo is shown), then back, and the receipt appears.
+// The first order takes a moment: while the drink is made, a few shots show the café, like a film would: the barista
+// at work, the customers, and last the hooded stranger at his laptop (in silence: no line, so nobody is accused and
+// no logo is shown). Then the camera glides back into her eyes and the receipt appears.
 // Needs a Collider (for the interaction raycast) and optionally an InteractableLabel.
 public class CafeCounter : MonoBehaviour, IInteractable
 {
@@ -15,13 +16,15 @@ public class CafeCounter : MonoBehaviour, IInteractable
     public CafeReceipt receipt;
 
     [Header("Waiting for the order")]
-    [Tooltip("Camera for the pan (the city's cutscene camera, off until used).")]
+    [Tooltip("Camera for the shots (the city's cutscene camera, off until used).")]
     public Camera panCamera;
-    [Tooltip("The black bars (UI > CityArrivalLetterbox).")]
-    public CanvasGroup letterbox;
-    [Tooltip("Who the camera pans to: the stranger.")]
-    public Transform suspect;
-    public float panSeconds = 4.5f, holdSeconds = 3f;
+    [Tooltip("The shots in order: the barista, the customers, last the stranger. The camera starts at each one and " +
+             "glides to its child \"End\". Placed under Story & Interactables > CafeOrderShots; move them to reframe.")]
+    public Transform[] shots;
+    [Tooltip("Seconds per shot, same order.")]
+    public float[] shotSeconds = { 3.5f, 3.5f, 4.5f };
+    [Tooltip("Seconds for the camera to glide from the last shot back into her eyes.")]
+    public float glideSeconds = 1.6f;
 
     public static bool Waiting { get; private set; }
 
@@ -46,7 +49,7 @@ public class CafeCounter : MonoBehaviour, IInteractable
     {
         var player = FindFirstObjectByType<FirstPersonController>();
         var view = Camera.main;
-        if (panCamera == null || suspect == null || player == null || view == null)
+        if (panCamera == null || shots == null || shots.Length == 0 || player == null || view == null)
         {
             Served(gp); // nothing to film: just hand over the receipt
             yield break;
@@ -59,34 +62,35 @@ public class CafeCounter : MonoBehaviour, IInteractable
         yield return Wait(2.2f);
         Say("Barista: Coming right up! It'll be a few minutes.", 2.6f);
 
-        // From her own view, turn slowly toward the stranger's head and drift a little closer.
+        // The café while she waits: cut to each shot, drifting slowly to its End.
         Transform cam = panCamera.transform;
-        Vector3 fromPosition = view.transform.position;
-        Quaternion fromRotation = view.transform.rotation;
-        Vector3 head = suspect.position + Vector3.up * 1.15f;
-        Vector3 toPosition = Vector3.Lerp(fromPosition, head, 0.15f);
-        Quaternion toRotation = Quaternion.LookRotation(head - toPosition);
-        cam.SetPositionAndRotation(fromPosition, fromRotation);
         panCamera.enabled = true;
-        for (float t = 0; t < 1; t += Time.deltaTime / panSeconds)
+        for (int i = 0; i < shots.Length; i++)
         {
-            float s = Mathf.SmoothStep(0, 1, t);
-            cam.SetPositionAndRotation(Vector3.Lerp(fromPosition, toPosition, s), Quaternion.Slerp(fromRotation, toRotation, s));
-            if (letterbox != null) letterbox.alpha = Mathf.Min(1, t * 3);
-            yield return null;
+            Transform shot = shots[i], end = shot.Find("End");
+            for (float t = 0; t < 1; t += Time.deltaTime / shotSeconds[i])
+            {
+                float s = Mathf.SmoothStep(0, 1, t);
+                cam.SetPositionAndRotation(Vector3.Lerp(shot.position, end.position, s), Quaternion.Slerp(shot.rotation, end.rotation, s));
+                yield return null;
+            }
         }
-        yield return Wait(holdSeconds); // no line: just a look at him, without Alice judging a stranger
 
+        // Her drink is called: glide from the stranger back to exactly what she sees, so switching cameras doesn't show.
         Say("Barista: Iced latte for Alice! The Wi-Fi password's on your receipt.", 3f);
-        for (float t = 0; t < 1; t += Time.deltaTime / 1f)
+        Vector3 fromPosition = cam.position;
+        Quaternion fromRotation = cam.rotation;
+        float fromFov = panCamera.fieldOfView;
+        for (float t = 0; t < 1; t += Time.deltaTime / glideSeconds)
         {
             float s = Mathf.SmoothStep(0, 1, t);
-            cam.SetPositionAndRotation(Vector3.Lerp(toPosition, fromPosition, s), Quaternion.Slerp(toRotation, fromRotation, s));
-            if (letterbox != null) letterbox.alpha = 1 - s;
+            cam.SetPositionAndRotation(Vector3.Lerp(fromPosition, view.transform.position, s),
+                                       Quaternion.Slerp(fromRotation, view.transform.rotation, s));
+            panCamera.fieldOfView = Mathf.Lerp(fromFov, view.fieldOfView, s);
             yield return null;
         }
-        if (letterbox != null) letterbox.alpha = 0;
         panCamera.enabled = false;
+        panCamera.fieldOfView = fromFov; // the city arrival uses this camera too
         player.enabled = true;
         ShowCrosshair(true);
         Waiting = false;
@@ -117,6 +121,7 @@ public class CafeCounter : MonoBehaviour, IInteractable
     {
         var crosshair = FindFirstObjectByType<RaycastCrosshair>(FindObjectsInactive.Include);
         if (crosshair != null && crosshair.crosshairDot != null) crosshair.crosshairDot.gameObject.SetActive(show);
+        if (!show && crosshair != null && crosshair.promptPanel != null) crosshair.promptPanel.gameObject.SetActive(false);
     }
 
     void UpdatePrompt()

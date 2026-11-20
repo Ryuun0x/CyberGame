@@ -18,7 +18,7 @@ import soundfile as sf
 import torch
 from scipy.signal import lfilter
 
-from lines import LINES
+from lines import LINES, SLOW
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "..", "..", "Assets", "Resources", "Voice")
@@ -110,7 +110,7 @@ if __name__ == "__main__":
         k = key(text)
         ref = os.path.join(HERE, "refs", speaker + ".wav")
         ref = ref if os.path.exists(ref) else None
-        recipe = [speaker, how, read, os.path.getmtime(ref) if ref else None]
+        recipe = [speaker, how, read, os.path.getmtime(ref) if ref else None] + ([SLOW[text]] if text in SLOW else [])
         path = os.path.join(OUT, k + ".ogg")
         if made.get(k) == recipe and os.path.exists(path):
             continue
@@ -135,6 +135,9 @@ if __name__ == "__main__":
             if score >= 95:
                 break
         score, heard, y = best if best else (0, "", y)
+        if text in SLOW:  # slower, same pitch
+            import librosa
+            y = librosa.effects.time_stretch(y.astype(np.float32), rate=SLOW[text]).astype(np.float64)
         if how == "thought":
             y = inner(y, sr)
         y = level(y)
