@@ -72,8 +72,11 @@ public class LaptopCarry : MonoBehaviour, IHoldInteractable
         var port = GetComponent<LaptopUsbPort>();
         if (port != null && port.InPort)
         {
+            bool mounted = Progress != null && Progress.flashDriveInserted;
             if (NarrationManager.Instance != null)
-                NarrationManager.Instance.Show("I should eject and unplug the flash drive first.", 3f);
+                NarrationManager.Instance.Show(mounted ? "I should eject and unplug the flash drive first."
+                                                       : "I still need to pull the flash drive out of the laptop.", 3f);
+            port.TriedToTakeLaptop(); // next time the laptop is open, she says how
             return;
         }
         StartCoroutine(PickUp());
@@ -82,6 +85,7 @@ public class LaptopCarry : MonoBehaviour, IHoldInteractable
     IEnumerator PickUp()
     {
         Busy = true;
+        Sfx.Play("laptop_pickup"); // the lid shuts, then it's lifted
         yield return TurnLid(lidOpen, Closed);
         Show(false);
         Progress.laptopAt = "hands";
@@ -100,6 +104,7 @@ public class LaptopCarry : MonoBehaviour, IHoldInteractable
     IEnumerator Place()
     {
         Busy = true;
+        Sfx.Play("laptop_place"); // set down on the table, then the lid opens
         spot.SetActive(false);
         lid.localRotation = Closed;
         Show(true);

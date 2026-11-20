@@ -7,7 +7,8 @@ using UnityEngine.SceneManagement;
 /// survives scene loads; nothing to place in a scene. Loops come from Resources/Ambience (made by
 /// ArtSource/Sounds/make_ambience.py) and fade in and out as the place changes:
 ///   home (Interior)  a room tone; at night (Chapter 2) a little quieter, with faint wind outside
-///   city             low wind and distant traffic, birds now and then, a horn far off once in a while
+///   city             low wind and distant traffic, birds now and then, a horn far off once in a while,
+///                    and every 5-14 s a car near the player beeps (a tap, a beep-beep, a long honk), in 3D from that car
 ///                    (the cars' own engines are on each CityCar)
 ///   café             the room tone and the lights humming, the traffic faint through the windows
 ///   laptop in use    its fan, on top of the rest
@@ -18,9 +19,9 @@ public class Ambience : MonoBehaviour
     const float FadeSeconds = 2f;
     readonly Dictionary<string, AudioSource> layers = new Dictionary<string, AudioSource>();
     // The city's occasional sounds (Resources/City, made by ArtSource/Sounds/make_city.py).
-    AudioClip[] birds, horns;
-    AudioSource birdSource, hornSource;
-    float nextBird, nextHorn;
+    AudioClip[] birds, horns, beeps;
+    AudioSource birdSource, hornSource, beepSource;
+    float nextBird, nextHorn, nextBeep;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Create()
@@ -46,6 +47,14 @@ public class Ambience : MonoBehaviour
         horns = System.Array.FindAll(city, c => c.name.StartsWith("horn"));
         birdSource = gameObject.AddComponent<AudioSource>();
         hornSource = gameObject.AddComponent<AudioSource>();
+        beeps = System.Array.FindAll(city, c => c.name.StartsWith("beep")); // made by ArtSource/Sounds/make_beeps.py
+        var beepCar = new GameObject("Beep");
+        beepCar.transform.SetParent(transform);
+        beepSource = beepCar.AddComponent<AudioSource>();
+        beepSource.spatialBlend = 1; // from the car, not from everywhere
+        beepSource.rolloffMode = AudioRolloffMode.Linear;
+        beepSource.minDistance = 8;
+        beepSource.maxDistance = 110;
     }
 
     void Update()
@@ -68,8 +77,28 @@ public class Ambience : MonoBehaviour
         {
             if (Time.time > nextBird) { if (nextBird > 0) Once(birdSource, birds, 0.25f); nextBird = Time.time + Random.Range(5f, 14f); }
             if (Time.time > nextHorn) { if (nextHorn > 0) Once(hornSource, horns, 0.12f); nextHorn = Time.time + Random.Range(45f, 110f); }
+            if (Time.time > nextBeep) { if (nextBeep > 0) Beep(); nextBeep = Time.time + Random.Range(5f, 14f); }
         }
-        else nextBird = nextHorn = 0; // starts counting again on the way out, so nothing plays the moment you step outside
+        else nextBird = nextHorn = nextBeep = 0; // starts counting again on the way out, so nothing plays the moment you step outside
+    }
+
+    // A car 6-90 m from the player beeps (louder the nearer it is): someone waiting at a crossing, a taxi, a truck. No car near, no beep.
+    void Beep()
+    {
+        if (beeps.Length == 0 || Camera.main == null) return;
+        Vector3 me = Camera.main.transform.position;
+        CityCar pick = null;
+        int seen = 0;
+        foreach (var car in FindObjectsByType<CityCar>(FindObjectsSortMode.None))
+        {
+            float d = Vector3.Distance(car.transform.position, me);
+            if (d < 6f || d > 90f) continue;
+            if (Random.Range(0, ++seen) == 0) pick = car; // any of them, equally likely
+        }
+        if (pick == null) return;
+        beepSource.transform.position = pick.transform.position;
+        beepSource.pitch = Random.Range(0.96f, 1.04f);
+        beepSource.PlayOneShot(beeps[Random.Range(0, beeps.Length)], 0.8f * GameSettings.Sfx);
     }
 
     static void Once(AudioSource source, AudioClip[] clips, float level)

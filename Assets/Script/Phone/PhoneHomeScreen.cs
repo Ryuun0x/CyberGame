@@ -81,8 +81,11 @@ public class PhoneHomeScreen : MonoBehaviour
         chatTitle.text = contact;
         foreach (Transform bubble in chatThread)
             if (bubble != bubbleTemplate.transform) Destroy(bubble.gameObject);
+        fromStory = true; // a story chat, not the player tapping the Messages icon
         OpenMessages();
+        fromStory = false;
     }
+    bool fromStory;
 
     // mine = true: my message (blue, on the right). false: their message (grey, on the left).
     public void AddChat(string text, bool mine)
@@ -98,6 +101,9 @@ public class PhoneHomeScreen : MonoBehaviour
     {
         HideAll();
         mailScreen.SetActive(true);
+        if (Progress != null)
+            Comment("mail", Progress.is2FAEnabled ? "The school wants everyone on 2FA. Good thing I already set it up."
+                                                  : "The school wants everyone to turn on 2FA. Kai said the same thing last night.");
         if (Progress == null || !Progress.mailUnread) return;
         Progress.mailUnread = false;
         // Reading the school's email brings the next thing to read: the news (a warning only).
@@ -110,12 +116,23 @@ public class PhoneHomeScreen : MonoBehaviour
         HideAll();
         newsScreen.SetActive(true);
         if (Progress != null) Progress.newsUnread = false;
+        Comment("news", "Ghostline again... people lost their accounts and their money. I need to be careful today.");
     }
 
     public void OpenMessages()
     {
         HideAll();
         messagesScreen.SetActive(true);
+        // Only from the icon, in the morning: later Kai's account is used by Ghostline, and the story writes the chat.
+        if (!fromStory && Progress != null && Progress.chapter == 1 && !Progress.thesisSubmitted)
+            Comment("messages", "Nothing new from Kai since last night.");
+    }
+
+    // What Alice makes of an app, the first time she opens it in this playthrough (voiced, like every subtitle).
+    static void Comment(string app, string line)
+    {
+        if (Progress == null || NarrationManager.Instance == null || !Progress.phoneComments.Add(app)) return;
+        NarrationManager.Instance.Show(line, 4f);
     }
 
     // ── Back to Home (wire to all back buttons) ────────────

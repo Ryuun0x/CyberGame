@@ -82,7 +82,9 @@ public class NarrationManager : MonoBehaviour
 
         // Force TMP to calculate size immediately
         narrationText.ForceMeshUpdate();
-        Vector2 textSize = narrationText.GetPreferredValues(message, maxWidth, 0);
+        // Measured at the width the text really gets inside the box (without the padding), so a long line
+        // wraps the same way here as on screen and the box is tall enough for every line.
+        Vector2 textSize = narrationText.GetPreferredValues(message, maxWidth - paddingX * 2, 0);
 
         // Resize box BEFORE showing it
         float boxWidth = Mathf.Min(textSize.x + paddingX * 2, maxWidth);
@@ -102,8 +104,13 @@ public class NarrationManager : MonoBehaviour
 
         // NOW show it - already correct size
         narrationBox.SetActive(true);
+        // In front of the phone: the box has its own Canvas (order 30). Unity forgets "override sorting" on a canvas
+        // that starts hidden, so it is switched on here, once the box is showing.
+        var ownCanvas = narrationBox.GetComponent<Canvas>();
+        if (ownCanvas != null) ownCanvas.overrideSorting = true;
 
-        yield return new WaitForSeconds(duration);
+        // Real time (the phone stops game time), standing still while the pause menu is open.
+        for (float t = 0; t < duration; t += PauseMenu.IsPaused ? 0 : Time.unscaledDeltaTime) yield return null;
         narrationBox.SetActive(false);
         current = null;
     }

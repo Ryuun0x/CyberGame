@@ -87,7 +87,7 @@ public static class BedtimeBeat
     {
         var lines = new System.Collections.Generic.List<string>
         {
-            score >= 90 ? "The police took down Ghostline's accounts. My report connected the fake Wi-Fi, the hacked accounts and the fake shop."
+            score >= 90 ? "The authorities took down Ghostline's accounts. My report connected the fake Wi-Fi, the hacked accounts and the fake shop."
             : score >= 60 ? "Ghostline's accounts were taken down after the reports."
             : "Nothing came of the report. And yesterday a new \"free Wi-Fi\" network showed up at another café..."
         };

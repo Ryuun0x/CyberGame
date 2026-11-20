@@ -5,8 +5,8 @@ using UnityEngine.InputSystem;
 
 /// <summary>
 /// The first time she steps out into the city (Chapter 1): a few street-level shots of the traffic and the streets
-/// (never from above, so the edge of the city stays out of view), letterboxed, her goal as a subtitle on the last
-/// shot, then back to first person. Any key skips (after the first second).
+/// (never from above, so the edge of the city stays out of view), her goal as a subtitle on the last shot, then the
+/// camera glides into her eyes and the game goes on from there. Any key skips (after the first second).
 /// On "CityArrival" in MainScene(city) (Story & Interactables). Each child of Shots is one shot: the camera starts
 /// there and glides to its child "End". Move them to reframe. Cars are added around each shot just before it plays.
 /// </summary>
@@ -22,14 +22,13 @@ public class CityArrival : MonoBehaviour
     public float[] shotSeconds = { 5f, 5f, 6f };
     [Tooltip("Cars added on the roads in front of each shot, so there is traffic to see.")]
     public int carsPerShot = 4;
-    [Tooltip("The black bars at the top and bottom (UI > CityArrivalLetterbox).")]
-    public CanvasGroup letterbox;
+    [Tooltip("Seconds for the camera to glide from the last shot into her eyes.")]
+    public float glideSeconds = 1.8f;
     [TextArea] public string line = "I need to find a café with Wi-Fi to send my thesis.";
 
     IEnumerator Start()
     {
         shotCamera.enabled = false;
-        letterbox.alpha = 0;
         var progress = GameProgressManager.Instance;
         // Not when the city scene is started on its own for testing (no wake-up played), and only once.
         if (progress == null || progress.chapter != 1 || !progress.wakeUpPlayed || progress.cityIntroPlayed) yield break;
@@ -55,16 +54,31 @@ public class CityArrival : MonoBehaviour
             {
                 float s = Mathf.SmoothStep(0, 1, t);
                 cam.SetPositionAndRotation(Vector3.Lerp(shot.position, end.position, s), Quaternion.Slerp(shot.rotation, end.rotation, s));
-                // Bars in over the first second, out over the last second.
-                letterbox.alpha = Mathf.Min(1f, (Time.time - started) / 1f, last ? (1 - t) * shotSeconds[i] : 1f);
                 yield return null;
             }
         }
-        letterbox.alpha = 0;
+        yield return GlideIntoPlayer();
         shotCamera.enabled = false;
         player.enabled = true;
         ShowCrosshair(true);
         Playing = false;
+    }
+
+    // From wherever the shot ended to exactly what the player's camera sees, so switching cameras doesn't show.
+    IEnumerator GlideIntoPlayer()
+    {
+        Transform cam = shotCamera.transform, eye = Camera.main.transform;
+        Vector3 fromPos = cam.position;
+        Quaternion fromRot = cam.rotation;
+        float fromFov = shotCamera.fieldOfView;
+        for (float t = 0; t < 1; t += Time.deltaTime / glideSeconds)
+        {
+            float s = Mathf.SmoothStep(0, 1, t);
+            cam.SetPositionAndRotation(Vector3.Lerp(fromPos, eye.position, s), Quaternion.Slerp(fromRot, eye.rotation, s));
+            shotCamera.fieldOfView = Mathf.Lerp(fromFov, Camera.main.fieldOfView, s);
+            yield return null;
+        }
+        shotCamera.fieldOfView = fromFov;
     }
 
     static bool Skipped(float started) =>
@@ -75,6 +89,8 @@ public class CityArrival : MonoBehaviour
     {
         var crosshair = FindFirstObjectByType<RaycastCrosshair>(FindObjectsInactive.Include);
         if (crosshair != null && crosshair.crosshairDot != null) crosshair.crosshairDot.gameObject.SetActive(show);
+        // The "Press E" prompt too: the player (and its crosshair script, which normally hides it) is off during the shots.
+        if (!show && crosshair != null && crosshair.promptPanel != null) crosshair.promptPanel.gameObject.SetActive(false);
     }
 
     void OnDestroy() => Playing = false;

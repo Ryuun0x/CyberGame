@@ -22,7 +22,9 @@ public class GameProgressManager : MonoBehaviour
     public bool thesisInCloud = false;       // a copy was saved to the school Drive (only possible online, at the café)
     public bool is2FAEnabled = false;
     public bool mailUnread = false;          // the school's 2FA email arrived (after the backup) and wasn't opened yet
-    public bool newsUnread = false;          // the news article (arrives when the school's email is read) wasn't opened yet
+    public bool newsUnread = false;
+    public readonly System.Collections.Generic.HashSet<string> phoneComments =
+        new System.Collections.Generic.HashSet<string>(); // apps Alice already said something about (PhoneHomeScreen)          // the news article (arrives when the school's email is read) wasn't opened yet
     public bool triedSubmitWithoutInternet = false;
     public bool arrivedAtCafe = false;
     public bool connectedToCafeWiFi = false;

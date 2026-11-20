@@ -30,10 +30,19 @@ public class LaptopUsbPort : MonoBehaviour
     [Tooltip("Seconds to watch the flash drive go in or out (the length of the insert animation).")]
     public float watchTime = 1.1f;
 
+    [Header("Guide")]
+    [Tooltip("Seconds of doing nothing before Alice says how to eject or unplug the flash drive (again every 2x this).")]
+    public float nudgeSeconds = 15f;
+
     // True during the close-up: LaptopInteraction ignores Esc until the camera is back at the screen.
     public bool Busy { get; private set; }
 
     bool wasInserted;
+    float stuck;      // seconds the drive has waited to be ejected / pulled out with the laptop open
+    bool wantsToGo;   // she tried to pick up the laptop with the drive still in: guide her sooner
+
+    // LaptopCarry: hold E on the laptop with the drive still in it.
+    public void TriedToTakeLaptop() => wantsToGo = true;
 
     void Start()
     {
@@ -89,6 +98,7 @@ public class LaptopUsbPort : MonoBehaviour
                     () => !Inserted || !laptopCanvas.activeInHierarchy, now: true);
             }
         }
+        Guide(usingLaptop && !Busy);
 
         // Plugged in (F) or ejected (taskbar): show/hide the Back-up to USB button.
         if (Inserted != wasInserted)
@@ -96,6 +106,23 @@ public class LaptopUsbPort : MonoBehaviour
             wasInserted = Inserted;
             desktop.RefreshBackupButton();
         }
+    }
+
+    // Stuck on the flash drive (the backup is done but it's still mounted, or ejected but still in the port):
+    // after a while Alice says what to do, in case the player can't find the taskbar icon or forgot F.
+    void Guide(bool active)
+    {
+        string line = null;
+        if (active && InPort && Inserted && (Progress.thesisBackedUp || wantsToGo))
+            line = "Before I unplug the flash drive, I should eject it. The USB icon is at the bottom right of the screen, next to the Wi-Fi.";
+        else if (active && InPort && !Inserted)
+            line = "It's safe to unplug now. (F)";
+        if (line == null) { stuck = 0; return; }
+
+        stuck += Time.deltaTime;
+        if (stuck < (wantsToGo ? 3f : nudgeSeconds)) return;
+        stuck = -nudgeSeconds; // and again a while later if still stuck
+        if (NarrationManager.Instance != null) NarrationManager.Instance.Show(line, 5f);
     }
 
     // At the port: show the drive (its Animator plays FlashDriveInsert on enable) and mount it.
@@ -112,6 +139,7 @@ public class LaptopUsbPort : MonoBehaviour
         pluggedDrive.GetComponent<Animator>().Play("FlashDriveRemove");
         yield return new WaitForSeconds(watchTime);
         pluggedDrive.SetActive(false);
+        wantsToGo = false;
     }
 
     // Camera to the port → flash drive goes in or out → camera back to the screen.

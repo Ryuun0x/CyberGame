@@ -228,6 +228,7 @@ GameObject:
   - component: {fileID: 2491242475071096699}
   - component: {fileID: 249048815237017061}
   - component: {fileID: 4905814483683815969}
+  - component: {fileID: 3081359925456021961}
   m_Layer: 5
   m_Name: NarrationBox
   m_TagString: Untagged
@@ -276,7 +277,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.11320752, g: 0.11027053, b: 0.10733354, a: 0.25490198}
+  m_Color: {r: 0.11320752, g: 0.11027053, b: 0.10733354, a: 0.7}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -333,6 +334,29 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!223 &3081359925456021961
+Canvas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1347655252167563531}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_RenderMode: 2
+  m_Camera: {fileID: 0}
+  m_PlaneDistance: 100
+  m_PixelPerfect: 0
+  m_ReceivesEvents: 1
+  m_OverrideSorting: 0
+  m_OverridePixelPerfect: 0
+  m_SortingBucketNormalizedSize: 0
+  m_VertexColorAlwaysGammaSpace: 0
+  m_AdditionalShaderChannelsFlag: 0
+  m_UpdateRectTransformForStandalone: 0
+  m_SortingLayerID: 0
+  m_SortingOrder: 30
+  m_TargetDisplay: 0
 --- !u!1 &1930936155354145516
 GameObject:
   m_ObjectHideFlags: 0
@@ -1415,6 +1439,7 @@ MonoBehaviour:
   paddingX: 40
   paddingY: 20
   bottomOffset: 12
+  hotbarHeight: 0.16
   maxWidth: 500
 --- !u!114 &7082808442982711215
 MonoBehaviour:
