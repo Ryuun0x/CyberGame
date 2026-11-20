@@ -32,6 +32,7 @@ public class ConsequenceToast : MonoBehaviour
 
     public static void Show()
     {
+        Sfx.Play("consequence");
         if (_instance == null) return;
         _instance.StopAllCoroutines();
         _instance.StartCoroutine(_instance.Play());

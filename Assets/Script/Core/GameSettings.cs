@@ -15,8 +15,8 @@ public static class GameSettings
     public static bool VSync;
     public static int Quality; // the project's quality levels: 0 = Low (Mobile renderer), 1 = High (PC renderer)
 
-    // Audio, 0 to 1. Music and SFX are for the sound effects to come: their AudioSources multiply by these.
-    public static float Master, Music, Sfx;
+    // Audio, 0 to 1. Music = Ambience, Sfx = Sfx and Footsteps, Voice = the voice-over (Voice). Master is the listener volume.
+    public static float Master, Music, Sfx, Voice;
 
     // Controls
     public static float Sensitivity; // multiplies the camera turn speed (FirstPersonController)
@@ -44,6 +44,7 @@ public static class GameSettings
         Master = PlayerPrefs.GetFloat("Settings.Master", 1f);
         Music = PlayerPrefs.GetFloat("Settings.Music", 0.8f);
         Sfx = PlayerPrefs.GetFloat("Settings.Sfx", 1f);
+        Voice = PlayerPrefs.GetFloat("Settings.Voice", 1f);
         Sensitivity = PlayerPrefs.GetFloat("Settings.Sensitivity", 1f);
         PathGuide = PlayerPrefs.GetInt("Settings.PathGuide", 0) == 1;
     }
@@ -57,6 +58,7 @@ public static class GameSettings
         PlayerPrefs.SetFloat("Settings.Master", Master);
         PlayerPrefs.SetFloat("Settings.Music", Music);
         PlayerPrefs.SetFloat("Settings.Sfx", Sfx);
+        PlayerPrefs.SetFloat("Settings.Voice", Voice);
         PlayerPrefs.SetFloat("Settings.Sensitivity", Sensitivity);
         PlayerPrefs.SetInt("Settings.PathGuide", PathGuide ? 1 : 0);
         PlayerPrefs.Save();

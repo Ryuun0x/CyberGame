@@ -15,8 +15,9 @@ using static StoryTools;
 ///   Shot 3  face close-up        her reply, "Kai is offline."
 ///   Shot 4  the living-room TV   late-night news about the scam wave and Ghostline (TVNews screen + ticker)
 ///   Shot 5  she lies down        (Alice's lying clip at LieSpot, phone on the bed) "Ghostline..."
-/// Then PlayWakeUp: time card "9:04 AM", shot 6: she wakes up and sits up in bed (getting-up clip), then black
-/// and WakeUpSequence switches to first person. Any key skips; Esc/P pause.
+/// Then PlayWakeUp: time card "9:04 AM", then through her eyes she wakes up and sits up in bed (getting-up clip,
+/// stopped at sitSeconds before she stands), then black and WakeUpSequence switches to the player.
+/// Any key skips; Esc/P pause.
 ///
 /// Everything it uses is placed in the Interior scene and hidden until the prologue:
 ///   Story & Interactables > Prologue  (student, phone, TVNews, shots: each shot camera glides to its child "End")
@@ -45,7 +46,7 @@ public class Prologue : MonoBehaviour
     [Header("Scene (Story & Interactables > Prologue)")]
     [Tooltip("The Prologue group: shown only during the prologue.")]
     public GameObject scene;
-    [Tooltip("The six shots in order (the sixth is the morning wake-up). The camera starts at each shot and moves to its child \"End\".")]
+    [Tooltip("The shots in order. The camera starts at each shot and moves to its child \"End\". The sixth (the old third-person wake-up) is no longer used: the wake-up is seen through her eyes.")]
     public Transform[] shots;
     [Tooltip("Shot lengths in seconds, same order.")]
     public float[] shotSeconds = { 6f, 12f, 7f, 12f, 6f, 14f };
@@ -168,9 +169,19 @@ public class Prologue : MonoBehaviour
 
         yield return Card("9:04 AM", "THE DAY OF THE DEADLINE", 1.5f);
 
-        // Shot 6: morning light, she wakes up and sits up.
+        // Morning light, through her eyes: she wakes up and sits up. The clip goes on to stand her up, which
+        // pushes her feet through the bed, so it stops once she sits.
         student.Play("GettingUp", 0, 0f);
-        StartShot(cam, 5);
+        Transform head = student.GetBoneTransform(HumanBodyBones.Head);
+        Vector3 headScale = head.localScale;
+        float near = cam.nearClipPlane;
+        head.localScale = Vector3.one * 0.001f; // her own head (and hair) would fill the view
+        cam.nearClipPlane = 0.02f;
+        student.Update(0); // pose her now, so the view starts at her eyes
+        eyesOf = head;
+        eyeCam = cam.transform;
+        snapEyes = true;
+        LateUpdate();
         StartCoroutine(Fade(letterbox, 1f, 1f));
         yield return fader.FadeTo(0f, 1.5f);
         yield return Hold(1f);
@@ -179,14 +190,43 @@ public class Prologue : MonoBehaviour
         yield return Line("You", YouColor, "Kai... I hope they're okay.", 2.2f);
         yield return Hold(1.5f);
         yield return Line("You", YouColor, "Wait, it's already nine?! The thesis is due at noon.", 2.6f);
+        while (!skipped && student.speed > 0) yield return null; // until she sits
 
         // Black, then hand over to first person.
         StartCoroutine(Fade(letterbox, 0f, 1.2f));
         yield return fader.FadeTo(1f, 1.2f);
         StopAllCoroutines();
+        eyesOf = null;
+        head.localScale = headScale;
+        student.speed = 1;
+        cam.nearClipPlane = near;
         scene.SetActive(false);
         overlay.SetActive(false);
         cam.transform.SetPositionAndRotation(camPosition, camRotation);
+    }
+
+    [Header("Wake-up (first person)")]
+    [Tooltip("Second of the getting-up clip where she sits on the bed; it stops there (after it she stands up).")]
+    public float sitSeconds = 13.6f;
+    [Tooltip("Where her eyes are from the head bone: up, forward (metres).")]
+    public Vector2 eyeOffset = new Vector2(0.09f, 0.11f);
+    [Tooltip("How quickly the view follows her head; lower is steadier.")]
+    public float headFollow = 6f;
+
+    Transform eyesOf, eyeCam; // during the wake-up: her head, and the camera inside it
+    bool snapEyes;
+
+    // After the Animator has posed her this frame: the camera at her eyes, turning with her head (smoothed,
+    // so the clip's small head jitters don't shake the view), and the clip stopped once she sits.
+    void LateUpdate()
+    {
+        if (eyesOf == null) return;
+        var state = student.GetCurrentAnimatorStateInfo(0);
+        if (state.IsName("GettingUp") && state.normalizedTime * state.length >= sitSeconds) student.speed = 0;
+        eyeCam.position = eyesOf.position + eyesOf.up * eyeOffset.x + eyesOf.forward * eyeOffset.y;
+        var look = Quaternion.LookRotation(eyesOf.forward, eyesOf.up);
+        eyeCam.rotation = snapEyes ? look : Quaternion.Slerp(eyeCam.rotation, look, 1 - Mathf.Exp(-headFollow * Time.deltaTime));
+        snapEyes = false;
     }
 
     // ── Shots ──
@@ -237,6 +277,7 @@ public class Prologue : MonoBehaviour
     IEnumerator Line(string speaker, string color, string text, float hold)
     {
         if (skipped) yield break;
+        if (speaker != null && speaker != "Kai") hold = Mathf.Max(hold, Voice.Play(text)); // Kai's lines are texts
         subtitleText.text = speaker == null ? text : $"<color={color}><b>{speaker}</b></color>   {text}";
         yield return Fade(subtitle, 1f, 0.25f);
         yield return Hold(hold);
@@ -288,5 +329,6 @@ public class Prologue : MonoBehaviour
                || keys.escapeKey.wasPressedThisFrame || keys.pKey.wasPressedThisFrame)
             yield return null;
         skipped = true;
+        Voice.Stop();
     }
 }

@@ -78,6 +78,7 @@ public class PhoneManager : MonoBehaviour
         previousControllerEnabled = firstPersonController != null && firstPersonController.enabled;
         previousInteractionEnabled = interaction != null && interaction.enabled;
         IsOpen = true;
+        Sfx.Play("phone_open");
         phoneCanvas.SetActive(true);
         Time.timeScale = 0;
         Cursor.lockState = CursorLockMode.None;
@@ -99,6 +100,7 @@ public class PhoneManager : MonoBehaviour
         if (Map != null && Map.IsExpanded)
             phoneCanvas.GetComponentInChildren<PhoneHomeScreen>(true)?.GoHome();
         IsOpen = false;
+        Sfx.Play("phone_close");
         if (phoneCanvas != null) phoneCanvas.SetActive(false);
         Time.timeScale = previousTimeScale;
         Cursor.lockState = previousCursorLock;

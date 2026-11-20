@@ -4,7 +4,7 @@ using UnityEngine;
 
 // Café counter: ordering a drink hands over a receipt printed with the real Wi-Fi name and password.
 // The first order takes a moment: while the drink is made, the camera pans slowly to the hooded stranger at his
-// laptop (a hint that someone in here is up to something; no logo is shown), then back, and the receipt appears.
+// laptop, holds on him in silence (no line, so nobody is accused; no logo is shown), then back, and the receipt appears.
 // Needs a Collider (for the interaction raycast) and optionally an InteractableLabel.
 public class CafeCounter : MonoBehaviour, IInteractable
 {
@@ -75,8 +75,7 @@ public class CafeCounter : MonoBehaviour, IInteractable
             if (letterbox != null) letterbox.alpha = Mathf.Min(1, t * 3);
             yield return null;
         }
-        Say("...That guy in the hoodie hasn't looked up from his laptop since I walked in.", holdSeconds);
-        yield return Wait(holdSeconds);
+        yield return Wait(holdSeconds); // no line: just a look at him, without Alice judging a stranger
 
         Say("Barista: Iced latte for Alice! The Wi-Fi password's on your receipt.", 3f);
         for (float t = 0; t < 1; t += Time.deltaTime / 1f)

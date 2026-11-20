@@ -6,6 +6,7 @@ public class DoorEntrance : MonoBehaviour, IInteractable
 
     public void Interact()
     {
+        Sfx.Play("door_through");
         SceneLoader.Instance.LoadScene(sceneToLoad);
     }
 }

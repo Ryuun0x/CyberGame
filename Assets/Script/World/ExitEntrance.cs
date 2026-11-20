@@ -16,6 +16,7 @@ public class ExitEntrance : MonoBehaviour, IInteractable
             if (NarrationManager.Instance != null) NarrationManager.Instance.Show("I should bring my laptop with me.");
             return;
         }
+        Sfx.Play("door_through");
         SceneLoader.Instance.LoadScene(sceneToLoad);
     }
 }

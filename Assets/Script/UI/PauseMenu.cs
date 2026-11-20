@@ -40,6 +40,11 @@ public class PauseMenu : MonoBehaviour
     UniversalAdditionalCameraData cameraData;
     bool cameraHadPostProcessing;
 
+    void OnDestroy()
+    {
+        if (IsPaused) AudioListener.pause = false; // leaving the scene while paused
+    }
+
     void Start()
     {
         pauseScreen.SetActive(false);
@@ -93,7 +98,9 @@ public class PauseMenu : MonoBehaviour
     public void Pause()
     {
         IsPaused = true;
+        Sfx.Play("pause");
         Time.timeScale = 0;
+        AudioListener.pause = true; // ambience, footsteps, cutscene audio stop; Sfx (menu clicks) ignores this
 
         // Stop the player and the camera. The look input is cleared too, so the camera
         // doesn't jump when the game resumes.
@@ -124,12 +131,14 @@ public class PauseMenu : MonoBehaviour
     // Called by the Resume button, and by pressing Esc again.
     public void Resume()
     {
+        Sfx.Play("resume");
         pauseScreen.SetActive(false);
         blurVolume.SetActive(false);
         if (cameraData != null) cameraData.renderPostProcessing = cameraHadPostProcessing;
 
         IsPaused = false;
         Time.timeScale = 1;
+        AudioListener.pause = false;
         if (playerInput != null) playerInput.look = Vector2.zero;
         if (player != null) player.enabled = true;
         if (!WakeUpSequence.Playing) ShowCrosshair(true); // stays hidden if we're back in a cutscene
@@ -150,6 +159,7 @@ public class PauseMenu : MonoBehaviour
     public void MainMenu()
     {
         IsPaused = false;
+        AudioListener.pause = false;
         DebriefScreen.LoadFresh(DebriefScreen.MenuScene);
     }
 

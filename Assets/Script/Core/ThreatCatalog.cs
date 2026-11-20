@@ -14,6 +14,14 @@ public class ThreatInfo
     public string Lesson;
     public string Better;   // shown when the player got it wrong: the right action and what it would have done
     public string Source;
+
+    // The rundown page (real-world wording, nothing specific to the game): the risky move, the safer move, one rule.
+    public string Risky;
+    public string Safer;
+    public string Rule;
+
+    // Where it happens, for the rundown's map: the café, otherwise home.
+    public bool AtCafe;
 }
 
 public static class ThreatCatalog
@@ -25,9 +33,13 @@ public static class ThreatCatalog
         Add(new ThreatInfo
         {
             Id = "evil_twin",
+            AtCafe = true,
             Kind = ThreatKind.Threat,
             Category = "Network",
-            Title = "Fake café Wi-Fi (evil twin)",
+            Title = "Fake café Wi-Fi",
+            Risky = "typing your email password into a Wi-Fi sign-in page.",
+            Safer = "joining the café's secured network with the password from the staff.",
+            Rule = "Wi-Fi never needs your email password.",
             SafeResult = "You got the password from your café receipt and joined the real, password-protected network. Your Goggle login never left your laptop.",
             RecoveredResult = "You picked the open copy of the café's network and saw its sign-in page, but backed out without typing your login.",
             CompromisedResult = "You typed your email and password into a fake Goggle sign-in on the open copy of the café's Wi-Fi. Its address was goggle-login.freewifi-portal.net, not accounts.goggle.com. The attacker running that network now has your email login, and you sent your thesis from that account.",
@@ -41,7 +53,10 @@ public static class ThreatCatalog
             Id = "login_alert",
             Kind = ThreatKind.Threat,
             Category = "Accounts",
-            Title = "Stolen password used to sign in",
+            Title = "A sign-in you didn't start",
+            Risky = "tapping \"Yes, it's me\" on a sign-in request you didn't make.",
+            Safer = "denying it, then changing your password right away.",
+            Rule = "Didn't start it? Deny it.",
             RecoveredResult = "Someone tried to sign in with the Goggle password the fake Wi-Fi stole. 2FA asked you first and you denied it, so they stayed out. Change that password now.",
             CompromisedResult = "Someone signed in to your Goggle account with the password the fake Wi-Fi stole: either you approved a sign-in you didn't start, or without 2FA nothing stopped them from changing your password.",
             Lesson = "Never approve a sign-in request you didn't start: deny it, then change your password. 2FA only protects you if you say no to prompts you don't recognize.",
@@ -54,7 +69,10 @@ public static class ThreatCatalog
             Id = "friend_scam",
             Kind = ThreatKind.Threat,
             Category = "Social engineering",
-            Title = "Friend's hacked account asks for money",
+            Title = "A friend asks for money",
+            Risky = "replying in the same chat and sending the money.",
+            Safer = "calling your friend on another channel first.",
+            Rule = "A hacked account can't answer a phone call.",
             SafeResult = "Kai's account asked you to send ₱1,000. You called Kai first, found out the account was hacked, and sent nothing.",
             CompromisedResult = "You sent ₱1,000 to a scammer using Kai's hacked account. Kai never got it.",
             Lesson = "When a friend's account suddenly asks for money, verify through another channel, like a phone call. Hacked accounts send friends fake pleas for help or money, and replying in the same chat only reaches the scammer.",
@@ -65,9 +83,13 @@ public static class ThreatCatalog
         Add(new ThreatInfo
         {
             Id = "fake_update",
+            AtCafe = true,
             Kind = ThreatKind.Threat,
             Category = "Malware",
             Title = "Fake browser update",
+            Risky = "downloading and running an \"update\" from a pop-up.",
+            Safer = "closing the pop-up and updating from your system's own settings.",
+            Rule = "Updates come from your system, not from web pages.",
             SafeResult = "A web page said your browser was out of date. You closed it and nothing was downloaded.",
             RecoveredResult = "You downloaded the \"update\" from a pop-up, but stopped at the security warning: you didn't run it, or the antivirus scan found ransomware and removed it. Nothing was installed.",
             CompromisedResult = "You downloaded an \"update\" from a pop-up and ran it, even though the warning said \"Unknown Publisher\". Real updates don't arrive that way, and it installed ransomware on your laptop.",
@@ -82,6 +104,9 @@ public static class ThreatCatalog
             Kind = ThreatKind.Habit,
             Category = "Data",
             Title = "Back up your files",
+            Risky = "keeping only one copy of your work.",
+            Safer = "keeping two backups: one on a flash drive, one in the cloud.",
+            Rule = "Two copies, two places.",
             SafeResult = "You kept two copies: one on a flash drive and one on your school Drive. A lost drive or a broken laptop can't erase your work.",
             RecoveredResult = "You made one backup. Better than none, but if that one copy is lost or locked, your work is gone.",
             CompromisedResult = "You left home with a single copy of your thesis.",
@@ -96,6 +121,9 @@ public static class ThreatCatalog
             Kind = ThreatKind.Threat,
             Category = "Malware",
             Title = "Files locked for ransom",
+            Risky = "paying the attackers to unlock your files.",
+            Safer = "resetting the computer and restoring from your backup.",
+            Rule = "Never pay. Restore from a backup.",
             SafeResult = "The fake update locked your files and demanded ₱5,000. You didn't pay: you reset the laptop and restored your thesis from your backup (the USB drive or Goggle Drive), if you had one.",
             CompromisedResult = "You paid the ransom. The attackers just asked for more, and the files stayed locked.",
             Lesson = "Never pay a ransom: it doesn't guarantee your files come back and it funds the attackers. A backup kept somewhere else (a USB drive, a cloud drive, ideally both) is what lets you recover.",
@@ -109,6 +137,9 @@ public static class ThreatCatalog
             Kind = ThreatKind.Threat,
             Category = "Passwords",
             Title = "Reused password",
+            Risky = "using the same password on a new shopping site.",
+            Safer = "making a new, long password for every account.",
+            Rule = "One account, one password.",
             SafeResult = "You made a new, long password just for ShopHub, so a leak there can't open your other accounts.",
             CompromisedResult = "You reused your Goggle password on ShopHub. When ShopHub was breached, that password opened your Goggle account too.",
             Lesson = "Use a different, long password for every account (CISA recommends at least 16 characters). A password manager remembers them for you.",
@@ -121,7 +152,10 @@ public static class ThreatCatalog
             Id = "online_selling_scam",
             Kind = ThreatKind.Threat,
             Category = "Online scams",
-            Title = "Fake online seller",
+            Title = "Too-good-to-be-true seller",
+            Risky = "paying a new seller with no reviews up front by e-wallet.",
+            Safer = "buying from a trusted store and paying through checkout.",
+            Rule = "Too cheap with no reviews? Walk away.",
             SafeResult = "You bought from a seller with a long history and good reviews, paying in a way that protects you.",
             RecoveredResult = "You opened the too-cheap seller's chat, but backed out and bought from a trusted seller instead.",
             CompromisedResult = "You paid a brand-new seller with no reviews upfront by GCash. The calculator never arrived.",
@@ -136,6 +170,9 @@ public static class ThreatCatalog
             Kind = ThreatKind.Habit,
             Category = "Accounts",
             Title = "Two-factor authentication",
+            Risky = "protecting your account with a password only.",
+            Safer = "turning on 2FA with an authenticator app.",
+            Rule = "A stolen password alone shouldn't be enough.",
             SafeResult = "You turned on 2FA, so a stolen password alone is not enough to get into your account.",
             CompromisedResult = "Your account was protected by a password only.",
             Lesson = "Turn on MFA for school, email and banking accounts. Microsoft found accounts using MFA are over 99.9% less likely to be compromised.",

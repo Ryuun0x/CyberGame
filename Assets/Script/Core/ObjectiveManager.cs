@@ -356,6 +356,7 @@ public class ObjectiveManager : MonoBehaviour
     IEnumerator CompleteObjective()
     {
         _isTransitioning = true;
+        Sfx.Play("objective");
 
         // Change icon to checkmark with pop-up animation
         if (iconImage != null && checkIcon != null)

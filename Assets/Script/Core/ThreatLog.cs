@@ -9,7 +9,10 @@ public class ThreatLog : MonoBehaviour
     {
         public string id;
         public ThreatOutcome outcome;
+        public int chapter; // the chapter whose rundown shows it: where it was recorded, or later resolved
     }
+
+    static int CurrentChapter => GameProgressManager.Instance != null ? GameProgressManager.Instance.chapter : 1;
 
     // Placed on the GameManager object (next to GameProgressManager), which survives scene loads.
     public static ThreatLog Instance;
@@ -40,7 +43,18 @@ public class ThreatLog : MonoBehaviour
     // A choice whose consequence plays out later (e.g. in Chapter 2): the debrief shows it as pending and
     // leaves it out of the score until Resolve. It may or may not have an entry recorded already.
     public void MarkPending(string id) => _pending.Add(id);
-    public void Resolve(string id) => _pending.Remove(id);
+    // Resolved: its result is final now, so it moves to this chapter's rundown.
+    public void Resolve(string id)
+    {
+        _pending.Remove(id);
+        int i = _entries.FindIndex(e => e.id == id);
+        if (i >= 0)
+        {
+            var e = _entries[i];
+            e.chapter = CurrentChapter;
+            _entries[i] = e;
+        }
+    }
     public bool IsPending(string id) => _pending.Contains(id);
 
     public void Record(string id, bool safe)
@@ -51,7 +65,7 @@ public class ThreatLog : MonoBehaviour
             // A later unsafe choice still counts (e.g. backing out once, then signing in on another fake network).
             if (!safe && _entries[existing].outcome != ThreatOutcome.Compromised)
             {
-                _entries[existing] = new Entry { id = id, outcome = ThreatOutcome.Compromised };
+                _entries[existing] = new Entry { id = id, outcome = ThreatOutcome.Compromised, chapter = _entries[existing].chapter };
                 Debug.Log($"[ThreatLog] {id} → {ThreatOutcome.Compromised}");
             }
             return;
@@ -61,7 +75,7 @@ public class ThreatLog : MonoBehaviour
             : _exposed.Contains(id) ? ThreatOutcome.Recovered
             : ThreatOutcome.Safe;
 
-        _entries.Add(new Entry { id = id, outcome = outcome });
+        _entries.Add(new Entry { id = id, outcome = outcome, chapter = CurrentChapter });
         Debug.Log($"[ThreatLog] {id} → {outcome}");
     }
 
@@ -72,10 +86,12 @@ public class ThreatLog : MonoBehaviour
         return false;
     }
 
-    public bool AnyCompromised()
+    // chapter 0: the whole game.
+    public bool AnyCompromised(int chapter = 0)
     {
         foreach (var e in _entries)
         {
+            if (chapter != 0 && e.chapter != chapter) continue;
             var info = ThreatCatalog.Get(e.id);
             if (info != null && info.Kind == ThreatKind.Threat && e.outcome == ThreatOutcome.Compromised && !_pending.Contains(e.id))
                 return true;
@@ -83,11 +99,13 @@ public class ThreatLog : MonoBehaviour
         return false;
     }
 
-    public int ScorePercent()
+    // chapter 0: the whole game (the epilogue's ending); otherwise that chapter's rundown.
+    public int ScorePercent(int chapter = 0)
     {
         int total = 0, count = 0;
         foreach (var e in _entries)
         {
+            if (chapter != 0 && e.chapter != chapter) continue;
             var info = ThreatCatalog.Get(e.id);
             if (info == null || info.Kind != ThreatKind.Threat || _pending.Contains(e.id)) continue;
             count++;

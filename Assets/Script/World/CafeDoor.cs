@@ -32,6 +32,7 @@ public class CafeDoor : MonoBehaviour, IInteractable
     {
         _isAnimating = true;
         _isOpen = !_isOpen;
+        if (_isOpen) Sfx.Play("door_open");
 
         Quaternion target = _isOpen ? _openRotation : _closedRotation;
         Quaternion start = hinge.rotation;
@@ -45,6 +46,7 @@ public class CafeDoor : MonoBehaviour, IInteractable
         }
 
         hinge.rotation = target;
+        if (!_isOpen) Sfx.Play("door_close"); // the shut lands as the door reaches the frame
         _isAnimating = false;
 
         // Update prompt text based on door state
